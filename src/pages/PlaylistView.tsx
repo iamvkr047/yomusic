@@ -9,6 +9,7 @@ import { MdFavorite, MdFavoriteBorder, MdPlayArrow, MdPlaylistPlay, MdShare } fr
 import { useDataStore } from '../zustand/app_data_store';
 import { handleShare } from '../utils/shareText';
 import { toastMsg } from '../utils/toastMsg';
+import { compressImage } from '../utils/getBase64FromUrl';
 
 const PlaylistView = () => {
   const { playlistId } = useParams();
@@ -111,7 +112,7 @@ const PlaylistView = () => {
     [playlists, playlistId]
   );
 
-  const toggleSaveToPl = () => {
+  const toggleSaveToPl = async () => {
     if (isAlreadySavedPl) {
       setPlaylists(playlists.filter((f) => f.playlistId != playlistId));
       toastMsg('Removed from playlists');
@@ -122,6 +123,12 @@ const PlaylistView = () => {
           isCustomChannel: false,
           videoItems: { items: [], nextPage: '' },
         };
+        // handle RD playlists thumbnail as it keeps changing so need to convert to data:base64 and store it:
+        if (playlistData.playlistId.startsWith('RD')) {
+          const compressedBase64Url = await compressImage(playlistData.thumbnail);
+          formattedObj.thumbnail = compressedBase64Url;
+        }
+
         setPlaylists([formattedObj, ...playlists]);
         toastMsg('Saved to playlists');
       }

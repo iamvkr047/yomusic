@@ -2,9 +2,9 @@
 
 #### Feature
 
-- Added Playlist Save Button Icon  on playlist page.
-- It saves or removes the Youtube playlist locally.
+- Auto play next song when songs ends.
 
 #### Fix
 
-- Try to fix duplicate notification notification
+- Playlistview cards rounded corners fix
+- When saving radio playlist, thumbnail are saved correctly.
