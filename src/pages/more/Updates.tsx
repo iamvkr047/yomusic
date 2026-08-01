@@ -37,7 +37,7 @@ const Updates = () => {
       setglobalDialogData({
         ...cleanDialogProps,
         isOpen: true,
-        subtitle: 'New Update Available',
+        subtitle: `New Update ${isUpdateAvailable.version} Available`,
         ok: {
           okText: 'Update',
           onOk: () => {

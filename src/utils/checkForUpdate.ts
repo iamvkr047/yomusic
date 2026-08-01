@@ -1,7 +1,7 @@
-import { CapacitorHttp } from '@capacitor/core';
 import { getCurrentAppVersion } from './getCurrentAppVersion';
 
-const BASE_URL = import.meta.env.DEV ? 'http://localhost:5173' : `https://yomusic.vercel.app`;
+// const BASE_URL = import.meta.env.DEV ? 'http://localhost:5173' : `https://yomusic.vercel.app`;
+const URL = `https://api.github.com/repos/iamvkr047/yomusic/releases/latest`;
 
 export const checkForUpdate = async () => {
   const APP_VERSION = await getCurrentAppVersion();
@@ -9,19 +9,21 @@ export const checkForUpdate = async () => {
     return false; // handle web
   }
 
-  const response = await CapacitorHttp.request({
-    url: `${BASE_URL}/update.json`,
-  });
+  const response = await fetch(URL);
   if (response.status !== 200) {
     return false;
   }
-  const updateAvailable = APP_VERSION < response.data[0].version;
+  const data = await response.json();
+  let parts = data.tag_name.replace('v', '').split('.');
+  let version = parseFloat(`${parts[0]}.${parts[1]}`);
+
+  const updateAvailable = APP_VERSION < version;
   if (!updateAvailable) {
     return false;
   }
   return {
-    version: updateAvailable ? response.data[0].version : APP_VERSION,
-    whatsNew: updateAvailable ? response.data[0].whatsNew : '',
-    changeLog: updateAvailable ? response.data[0].changeLog : [],
+    version: updateAvailable ? version : APP_VERSION,
+    whatsNew: updateAvailable ? '' : '',
+    changeLog: updateAvailable ? data.body : [],
   };
 };
