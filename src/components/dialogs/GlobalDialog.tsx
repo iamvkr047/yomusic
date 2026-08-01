@@ -3,17 +3,19 @@ import { Dialog, DialogButton } from 'konsta/react';
 
 const GlobalDialog = () => {
   const { globalDialogData, setglobalDialogData } = useDataStore();
-  const closeDialog = () => {
-    setglobalDialogData({ ...globalDialogData, isOpen: false }); // close dialog
+  const handleClose = () => {
+    if (globalDialogData.onClose) {
+      globalDialogData.onClose();
+    } else {
+      setglobalDialogData({ ...globalDialogData, isOpen: false });
+    }
   };
 
   return (
     <Dialog
       className="w-9/10"
       opened={globalDialogData.isOpen}
-      onBackdropClick={() => {
-        globalDialogData.onClose ? globalDialogData.onClose() : closeDialog();
-      }}
+      onBackdropClick={handleClose}
       title={globalDialogData.title ? globalDialogData.title : ''}
       content={
         globalDialogData.subtitle
@@ -29,7 +31,7 @@ const GlobalDialog = () => {
               onClick={() => {
                 globalDialogData.cancel?.onCancel
                   ? globalDialogData.cancel?.onCancel()
-                  : closeDialog();
+                  : handleClose();
               }}
             >
               {globalDialogData.cancel.cancelText}
@@ -40,7 +42,7 @@ const GlobalDialog = () => {
             <DialogButton
               strong
               onClick={() => {
-                globalDialogData.ok?.onOk ? globalDialogData.ok?.onOk() : closeDialog();
+                globalDialogData.ok?.onOk ? globalDialogData.ok?.onOk() : handleClose();
               }}
             >
               {globalDialogData.ok.okText}

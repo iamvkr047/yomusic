@@ -1,20 +1,20 @@
+import { ListItem } from 'konsta/react';
 import { MdHistory } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 
 const HistoryC = () => {
   const navigate = useNavigate();
   return (
-    <div
-      className="flex gap-4 items-center py-2 rounded-lg"
+    <ListItem
+      media={<MdHistory size={24} />}
       onClick={() => {
         navigate('/history');
       }}
-    >
-      <MdHistory size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">History</div>
-      </div>
-    </div>
+      link
+      title="History"
+      chevronMaterial={false}
+      contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0! rounded-t-lg"
+    />
   );
 };
 

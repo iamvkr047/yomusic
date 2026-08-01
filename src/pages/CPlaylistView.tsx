@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useDataStore } from '../zustand/app_data_store';
 import { MdPlayArrow, MdPlaylistPlay } from 'react-icons/md';
 import { Button, List } from 'konsta/react';
 import VideoCard from '../components/cards/VideoCard';
+import { playVideo } from '../playVideo';
 
 const CPlaylistView = () => {
   const { playlistId } = useParams();
-  const navigate = useNavigate();
   const { playlists, playlistData, setplaylistData } = useDataStore();
 
   useEffect(() => {
@@ -44,7 +44,8 @@ const CPlaylistView = () => {
               rounded={true}
               className="w-full"
               onClick={() => {
-                navigate(`/play/${playlistData.videoItems.items[0].videoId}`);
+                // navigate(`/play/${}`);
+                playVideo(playlistData.videoItems.items[0].videoId);
               }}
             >
               <MdPlayArrow size={18} className="me-2" />

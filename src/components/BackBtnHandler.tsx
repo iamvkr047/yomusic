@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { App } from '@capacitor/app';
 import { useDataStore } from '../zustand/app_data_store';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { playVideo } from '../playVideo';
 
 const BackBtnHandler = () => {
   const { globalDialogData, setglobalDialogData, isPlayerVisible, setIsPlayerVisible } =
@@ -43,7 +44,8 @@ const BackBtnHandler = () => {
             navigate(`/list/${playlistId}`);
           } else if (videoId) {
             // If it's just a video, go to the play route
-            navigate(`/play/${videoId}`);
+            // navigate(`/play/${videoId}`);
+            playVideo(videoId);
           } else {
             alert('Invalid YouTube Video or Playlist URL');
           }

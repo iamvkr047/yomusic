@@ -2,9 +2,10 @@
 
 #### Feature
 
-- Auto play next song when songs ends.
+- Improved playing deck FAB
+- More tab items UI improved
+- Improved Icons UI
 
 #### Fix
 
-- Playlistview cards rounded corners fix
-- When saving radio playlist, thumbnail are saved correctly.
+- Update button icon fix now and opens up the site.

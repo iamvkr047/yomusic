@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from 'konsta/react';
 
 const CarouselList = ({
   content,
@@ -78,7 +79,7 @@ const LazyLoadImage = (props: {
 
   return (
     <div key={playlistId} className="shrink-0 px-2 basis-[60%] grow-1 min-w-0">
-      <div
+      <Button
         className="h-40 bg-slate-300 rounded-2xl"
         style={{
           backgroundImage: hasLoaded ? `url('${thumbnail}')` : '',
@@ -89,7 +90,7 @@ const LazyLoadImage = (props: {
         onClick={() => {
           navigate(`/list/${playlistId}`);
         }}
-      ></div>
+      ></Button>
     </div>
   );
 };

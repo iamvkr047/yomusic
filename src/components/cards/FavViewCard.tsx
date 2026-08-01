@@ -1,12 +1,11 @@
 import { useDataStore } from '../../zustand/app_data_store';
-import { useNavigate } from 'react-router-dom';
 import { useLongPress } from '../../hooks/useLongPress';
 import type { VideoType } from '../../types';
 import { ListItem } from 'konsta/react';
 import { toastMsg } from '../../utils/toastMsg';
+import { playVideo } from '../../playVideo';
 
 const FavViewCard = ({ data: { videoId, title, channel } }: { data: VideoType }) => {
-  const navigate = useNavigate();
   const { favourites, setFavourites, globalDialogData, setglobalDialogData, setGlobalQueue } =
     useDataStore();
   const closeDialog = () => {
@@ -38,7 +37,8 @@ const FavViewCard = ({ data: { videoId, title, channel } }: { data: VideoType })
       className=""
       {...bindLongPress(`fav-${videoId}`)}
       onClick={() => {
-        navigate(`/play/${videoId}`);
+        // navigate(`/play/${videoId}`);
+        playVideo(videoId);
         // get  index
         const i = favourites.findIndex((item) => item.videoId === videoId);
         setGlobalQueue({

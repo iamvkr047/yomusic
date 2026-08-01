@@ -1,18 +1,18 @@
-import { useNavigate } from 'react-router-dom';
 import type { VideoType } from '../../types';
 import { MdClose } from 'react-icons/md';
 import { useDataStore } from '../../zustand/app_data_store';
 import { ListItem } from 'konsta/react';
+import { playVideo } from '../../playVideo';
 
 const RecentSearchesCard = ({ data }: { data: VideoType }) => {
   const { videoId, title, channel } = data;
-  const navigate = useNavigate();
   const { recentSearches, setRecentSearches, setGlobalQueue } = useDataStore();
   return (
     <div
       className="rounded-lg"
       onClick={() => {
-        navigate(`/play/${videoId}`);
+        // navigate(`/play/${videoId}`);
+        playVideo(videoId);
         // get  index
         const i = recentSearches.findIndex((item) => item.videoId === videoId);
         setGlobalQueue({

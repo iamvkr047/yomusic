@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import useYTPlayer from '../hooks/useYtPlayer';
 import { useDataStore } from '../zustand/app_data_store';
 import { MdClose } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
+import { playVideo } from '../playVideo';
 
 const YtWrapper = () => {
   const {
@@ -20,7 +20,6 @@ const YtWrapper = () => {
     setGlobalQueue,
   } = useDataStore();
   const anchorRef = useRef<HTMLDivElement | null>(null);
-  const navigate = useNavigate();
 
   const { seekTo } = useYTPlayer({
     anchorRef,
@@ -61,9 +60,7 @@ const YtWrapper = () => {
       const copyGlobalQueue = { ...globalQueue };
       copyGlobalQueue.currentIndex += 1;
       setGlobalQueue(copyGlobalQueue);
-      navigate(`/play/${copyGlobalQueue.contents[copyGlobalQueue.currentIndex].videoId}`, {
-        replace: true,
-      });
+      playVideo(copyGlobalQueue.contents[copyGlobalQueue.currentIndex].videoId);
     },
   });
 

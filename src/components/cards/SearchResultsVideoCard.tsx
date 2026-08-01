@@ -1,10 +1,9 @@
-import { useNavigate } from 'react-router-dom';
 import type { VideoType } from '../../types';
 import { useDataStore } from '../../zustand/app_data_store';
 import { ListItem } from 'konsta/react';
+import { playVideo } from '../../playVideo';
 
 const SearchResultsVideoCard = ({ video }: { video: VideoType }) => {
-  const navigate = useNavigate();
   const { recentSearches, setRecentSearches, setGlobalQueue } = useDataStore();
 
   const handleClick = () => {
@@ -23,7 +22,8 @@ const SearchResultsVideoCard = ({ video }: { video: VideoType }) => {
       setRecentSearches([video, ...copy.slice(0, limit - 1)]);
     }
 
-    navigate(`/play/${video.videoId}`);
+    // navigate(`/play/${video.videoId}`);
+    playVideo(video.videoId);
     //   clear out global queue
     setGlobalQueue({ currentIndex: 0, contents: [] });
   };

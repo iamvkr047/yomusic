@@ -4,6 +4,7 @@ import { Toast } from '@capacitor/toast';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { isValidPlaylistArray, isValidVideoArray } from '../../types';
+import { ListItem } from 'konsta/react';
 
 const ImportExport = () => {
   const {
@@ -135,11 +136,15 @@ const ImportExport = () => {
   };
 
   return (
-    <div className="flex gap-4 items-center py-2 rounded-lg" onClick={showImportExport}>
-      <MdArchive size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">Your Data</div>
-      </div>
+    <>
+      <ListItem
+        media={<MdArchive size={24} />}
+        onClick={showImportExport}
+        link
+        title="Your Data"
+        chevronMaterial={false}
+        contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0! rounded-lg_"
+      />
       <input
         id="fileBox"
         hidden={true}
@@ -148,7 +153,7 @@ const ImportExport = () => {
         accept=".ymb"
         onChange={importData}
       />
-    </div>
+    </>
   );
 };
 

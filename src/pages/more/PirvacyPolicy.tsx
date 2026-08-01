@@ -1,6 +1,7 @@
 import { MdPolicy } from 'react-icons/md';
 import { useDataStore } from '../../zustand/app_data_store';
 import Priv_Pol_Component from '../../components/Priv_Pol_Component';
+import { ListItem } from 'konsta/react';
 
 const PirvacyPolicy = () => {
   const { setglobalDialogData, globalDialogData } = useDataStore();
@@ -28,12 +29,14 @@ const PirvacyPolicy = () => {
     });
   }
   return (
-    <div className="flex gap-4 items-center py-2 rounded-lg" onClick={openPrivPolicy}>
-      <MdPolicy size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">Privacy Policy</div>
-      </div>
-    </div>
+    <ListItem
+      media={<MdPolicy size={24} />}
+      onClick={openPrivPolicy}
+      link
+      title="Privacy Policy"
+      chevronMaterial={false}
+      contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0! rounded-b-lg"
+    />
   );
 };
 

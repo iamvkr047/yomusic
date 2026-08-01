@@ -3,6 +3,7 @@ import { IoMdGlobe } from 'react-icons/io';
 import { countryArray } from '../../utils/countries';
 import { useDataStore } from '../../zustand/app_data_store';
 import { Toast } from '@capacitor/toast';
+import { ListItem } from 'konsta/react';
 
 const Region = () => {
   const { setHomeSongs, setglobalDialogData } = useDataStore();
@@ -17,28 +18,29 @@ const Region = () => {
     window.location.reload();
   };
   return (
-    <div
-      className="flex gap-4 items-center py-2 rounded-lg"
-      onClick={() => {
-        setglobalDialogData({
-          isOpen: true,
-          title: 'Region',
-          ok: {
-            okText: 'Save',
-            onOk: updateRegion,
-          },
-          cancel: {
-            cancelText: 'Cancel',
-          },
-          children: <CountrySelection />,
-        });
-      }}
-    >
-      <IoMdGlobe size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">Region</div>
-      </div>
-    </div>
+    <>
+      <ListItem
+        media={<IoMdGlobe size={24} />}
+        onClick={() => {
+          setglobalDialogData({
+            isOpen: true,
+            title: 'Region',
+            ok: {
+              okText: 'Save',
+              onOk: updateRegion,
+            },
+            cancel: {
+              cancelText: 'Cancel',
+            },
+            children: <CountrySelection />,
+          });
+        }}
+        link
+        title="Region"
+        chevronMaterial={false}
+        contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0! rounded-lg_"
+      />
+    </>
   );
 };
 

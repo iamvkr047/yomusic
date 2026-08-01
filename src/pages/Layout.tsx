@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Bottombar from '../components/Bottombar';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Navbar } from 'konsta/react';
+import { Link, Navbar } from 'konsta/react';
 import { MdSearch } from 'react-icons/md';
 import DarkModeToggle from '../components/DarkModeToggle';
 import { useElementScroll } from '../hooks/useElementScroll';
@@ -38,14 +38,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <>
                 <UpdateBlock />
                 {pathname === '/' && (
-                  <div
-                    onClick={() => {
-                      navigate('/search');
-                    }}
-                    className="me-4"
-                  >
-                    <MdSearch className="size-6" />
-                  </div>
+                  <Link iconOnly onClick={()=>{
+                    navigate("/search")
+                  }}>
+                  <MdSearch className="size-6" />
+                </Link>
                 )}
 
                 <DarkModeToggle />

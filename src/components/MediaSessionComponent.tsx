@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
 import { CapacitorMusicControls } from 'capacitor-music-controls-plugin';
-import { useNavigate } from 'react-router-dom';
 import { useDataStore } from '../zustand/app_data_store';
+import { playVideo } from '../playVideo';
 
 const MediaSessionComponent = () => {
   const { globalQueue, setGlobalQueue, currentPlayingVideo, isPlaying, setIsPlaying } =
     useDataStore();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (currentPlayingVideo.videoId && currentPlayingVideo.videoId !== 'M7lc1UVf-VE') {
@@ -69,9 +68,10 @@ const MediaSessionComponent = () => {
     if (globalQueue.contents.length <= 0 || globalQueue.currentIndex <= 0) {
       return false;
     }
-    navigate('/play/' + globalQueue.contents[globalQueue.currentIndex - 1].videoId, {
-      replace: window.location.href.includes('/play/') ? true : false,
-    });
+    // navigate('/play/' + globalQueue.contents[globalQueue.currentIndex - 1].videoId, {
+    //   replace: window.location.href.includes('/play/') ? true : false,
+    // });
+    playVideo(globalQueue.contents[globalQueue.currentIndex - 1].videoId);
     // update global queue too:
     setGlobalQueue({
       ...globalQueue,
@@ -86,9 +86,10 @@ const MediaSessionComponent = () => {
     ) {
       return false;
     }
-    navigate('/play/' + globalQueue.contents[globalQueue.currentIndex + 1].videoId, {
-      replace: window.location.href.includes('/play/') ? true : false,
-    });
+    // navigate('/play/' + globalQueue.contents[globalQueue.currentIndex + 1].videoId, {
+    //   replace: window.location.href.includes('/play/') ? true : false,
+    // });
+    playVideo(globalQueue.contents[globalQueue.currentIndex + 1].videoId);
     // update global queue too:
     setGlobalQueue({
       ...globalQueue,

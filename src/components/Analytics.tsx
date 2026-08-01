@@ -12,18 +12,16 @@ const Analytics = () => {
       script.defer = true;
       script.dataset.websiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID;
 
-      script.dataset.autoTrack = 'false';
-
       // Trigger the / hit as soon as the script loads
-      script.onload = () => {
-        if ((window as any).umami) {
-          (window as any).umami.track((props: any) => ({
-            ...props,
-            url: '/',
-            title: 'Homepage',
-          }));
-        }
-      };
+    //   script.onload = () => {
+    //     if ((window as any).umami) {
+    //       (window as any).umami.track((props: any) => ({
+    //         ...props,
+    //         url: '/',
+    //         title: 'Homepage',
+    //       }));
+    //     }
+    //   };
 
       document.body.appendChild(script);
     }

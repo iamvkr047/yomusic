@@ -5,6 +5,8 @@ import About from '../more/About';
 import Updates from '../more/Updates';
 import PirvacyPolicy from '../more/PirvacyPolicy';
 import HistoryC from '../more/History';
+import { List } from 'konsta/react';
+import { Fragment } from 'react/jsx-runtime';
 // import SleepTimer from "../more/SleepTimer";
 
 const More = () => {
@@ -47,10 +49,12 @@ const More = () => {
     <div>
       <div className="title font-semibold text-lg my-4">More</div>
       {/* settings list */}
-      <div className="flex flex-col gap-4 pb-4">
-        {options.map((item) => (
-          <div key={item.title}>{item.component}</div>
-        ))}
+      <div>
+        <List>
+          {options.map((item) => (
+            <Fragment key={item.title}>{item.component}</Fragment>
+          ))}
+        </List>
       </div>
     </div>
   );

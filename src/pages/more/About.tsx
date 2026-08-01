@@ -1,6 +1,7 @@
 import { MdInfo } from 'react-icons/md';
 import { useDataStore } from '../../zustand/app_data_store';
 import { getCurrentAppVersion } from '../../utils/getCurrentAppVersion';
+import { ListItem } from 'konsta/react';
 
 const About = () => {
   const { setglobalDialogData } = useDataStore();
@@ -44,12 +45,14 @@ const About = () => {
     }
   }
   return (
-    <div className="flex gap-4 items-center py-2 rounded-lg" onClick={showAbout}>
-      <MdInfo size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">About</div>
-      </div>
-    </div>
+    <ListItem
+      media={<MdInfo size={24} />}
+      onClick={showAbout}
+      link
+      title="About"
+      chevronMaterial={false}
+      contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0!"
+    />
   );
 };
 

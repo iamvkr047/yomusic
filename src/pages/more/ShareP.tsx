@@ -1,10 +1,11 @@
 import { MdShare } from 'react-icons/md';
 import { handleShare } from '../../utils/shareText';
+import { ListItem } from 'konsta/react';
 
 const ShareP = () => {
   return (
-    <div
-      className="flex gap-4 items-center py-2 rounded-lg"
+    <ListItem
+      media={<MdShare size={24} />}
       onClick={() => {
         handleShare({
           title: 'Download yo Music',
@@ -12,12 +13,11 @@ const ShareP = () => {
           text: 'Download yo Music',
         });
       }}
-    >
-      <MdShare size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">Share</div>
-      </div>
-    </div>
+      link
+      title="Share"
+      chevronMaterial={false}
+      contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0! rounded-lg_"
+    />
   );
 };
 

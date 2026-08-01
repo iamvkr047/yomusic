@@ -1,12 +1,11 @@
-import { useNavigate } from 'react-router-dom';
 import type { PlaylistType, VideoType } from '../../types';
 import { useDataStore } from '../../zustand/app_data_store';
 import { ListItem } from 'konsta/react';
 import { useLongPress } from '../../hooks/useLongPress';
 import { toastMsg } from '../../utils/toastMsg';
+import { playVideo } from '../../playVideo';
 
 const VideoCard = ({ video, playlistData }: { video: VideoType; playlistData: PlaylistType }) => {
-  const navigate = useNavigate();
   const { setGlobalQueue, globalDialogData, setglobalDialogData, playlists, setPlaylists } =
     useDataStore();
 
@@ -63,7 +62,8 @@ const VideoCard = ({ video, playlistData }: { video: VideoType; playlistData: Pl
           currentIndex: i,
           contents: playlistData.videoItems.items,
         });
-        navigate(`/play/${video.videoId}`);
+        // navigate(`/play/${video.videoId}`);
+        playVideo(video.videoId);
       }}
     >
       <ListItem

@@ -12,16 +12,15 @@ import {
   MdPlayArrow,
   MdVideocam,
 } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
 import { formatTime } from '../../utils/formatTime';
 import { useDataStore } from '../../zustand/app_data_store';
 import type { VideoType } from '../../types';
 import { Range } from 'konsta/react';
 import { toastMsg } from '../../utils/toastMsg';
+import { playVideo } from '../../playVideo';
 
 const MusicControls = ({ data }: { data: VideoType }) => {
   const { videoId, duration } = data;
-  const navigate = useNavigate();
 
   const {
     favourites,
@@ -125,9 +124,10 @@ const MusicControls = ({ data }: { data: VideoType }) => {
     if (globalQueue.contents.length <= 0 || globalQueue.currentIndex <= 0) {
       return false;
     }
-    navigate('/play/' + globalQueue.contents[globalQueue.currentIndex - 1].videoId, {
-      replace: true,
-    });
+    // navigate('/play/' + globalQueue.contents[globalQueue.currentIndex - 1].videoId, {
+    //   replace: true,
+    // });
+    playVideo(globalQueue.contents[globalQueue.currentIndex - 1].videoId);
     // update global queue too:
     setGlobalQueue({
       ...globalQueue,
@@ -142,9 +142,10 @@ const MusicControls = ({ data }: { data: VideoType }) => {
     ) {
       return false;
     }
-    navigate('/play/' + globalQueue.contents[globalQueue.currentIndex + 1].videoId, {
-      replace: true,
-    });
+    // navigate('/play/' + globalQueue.contents[globalQueue.currentIndex + 1].videoId, {
+    //   replace: true,
+    // });
+    playVideo(globalQueue.contents[globalQueue.currentIndex + 1].videoId);
     // update global queue too:
     setGlobalQueue({
       ...globalQueue,

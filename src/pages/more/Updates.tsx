@@ -1,6 +1,7 @@
 import { MdCloudDownload } from 'react-icons/md';
 import { useDataStore } from '../../zustand/app_data_store';
 import { checkForUpdate } from '../../utils/checkForUpdate';
+import { ListItem } from 'konsta/react';
 
 const Updates = () => {
   const { setglobalDialogData } = useDataStore();
@@ -65,12 +66,14 @@ const Updates = () => {
     }
   };
   return (
-    <div className="flex gap-4 items-center py-2 rounded-lg" onClick={showUpdateDialog}>
-      <MdCloudDownload size={24} />
-      <div className="info w-full">
-        <div className="title  font-semibold">Updates</div>
-      </div>
-    </div>
+    <ListItem
+      media={<MdCloudDownload size={24} />}
+      onClick={showUpdateDialog}
+      link
+      title="Updates"
+      chevronMaterial={false}
+      contentClassName="bg-md-light-surface-3 dark:bg-md-dark-surface-3 m-0! rounded-lg_"
+    />
   );
 };
 

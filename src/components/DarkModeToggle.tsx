@@ -2,6 +2,7 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { useEffect, useState } from 'react';
 import { MdDarkMode, MdSunny } from 'react-icons/md';
 import { Device } from '@capacitor/device';
+import { Link } from 'konsta/react';
 
 const DarkModeToggle = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme'));
@@ -41,9 +42,13 @@ const DarkModeToggle = () => {
   }, []);
 
   return theme === 'light' ? (
-    <MdDarkMode onClick={toggleTheme} className="size-7" />
+    <Link iconOnly>
+      <MdDarkMode onClick={toggleTheme} className="size-7" />
+    </Link>
   ) : (
-    <MdSunny onClick={toggleTheme} className="size-7" />
+    <Link iconOnly>
+      <MdSunny onClick={toggleTheme} className="size-7" />
+    </Link>
   );
 };
 

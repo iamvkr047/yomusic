@@ -1,12 +1,11 @@
 import { useDataStore } from '../../zustand/app_data_store';
-import { useNavigate } from 'react-router-dom';
 import { useLongPress } from '../../hooks/useLongPress';
 import { Toast } from '@capacitor/toast';
 import type { VideoType } from '../../types';
 import { ListItem } from 'konsta/react';
+import { playVideo } from '../../playVideo';
 
 const HistCard = ({ data: { videoId, title, channel } }: { data: VideoType }) => {
-  const navigate = useNavigate();
   const { history, setHistory, globalDialogData, setglobalDialogData, setGlobalQueue } =
     useDataStore();
   const closeDialog = () => {
@@ -40,7 +39,8 @@ const HistCard = ({ data: { videoId, title, channel } }: { data: VideoType }) =>
       className="rounded-lg"
       {...bindLongPress(`fav-${videoId}`)}
       onClick={() => {
-        navigate(`/play/${videoId}`);
+        // navigate(`/play/${videoId}`);
+        playVideo(videoId);
         // get  index
         const i = history.findIndex((item) => item.videoId === videoId);
         setGlobalQueue({

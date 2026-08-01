@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { useNavigate } from 'react-router-dom';
 import { useDataStore } from '../zustand/app_data_store';
+import { playVideo } from '../playVideo';
+import { Button } from 'konsta/react';
 
 const CarouselVideo = ({
   content,
@@ -75,7 +76,6 @@ const LazyLoadImage = (props: {
   }[];
 }) => {
   const { videoId, inView, index, content } = props;
-  const navigate = useNavigate();
   const { setGlobalQueue } = useDataStore();
   const [hasLoaded, setHasLoaded] = useState(false);
 
@@ -87,7 +87,7 @@ const LazyLoadImage = (props: {
 
   return (
     <div key={videoId} className="shrink-0 px-2 basis-[60%] grow-1 min-w-0">
-      <div
+      <Button
         className="h-40 bg-slate-300 rounded-2xl"
         style={{
           backgroundImage: hasLoaded
@@ -98,7 +98,8 @@ const LazyLoadImage = (props: {
           backgroundPosition: 'center',
         }}
         onClick={() => {
-          navigate(`/play/${videoId}`);
+        //   navigate(`/play/${videoId}`);
+        playVideo(videoId);
 
           setGlobalQueue({
             currentIndex: index,
@@ -110,7 +111,7 @@ const LazyLoadImage = (props: {
             })),
           });
         }}
-      ></div>
+      ></Button>
     </div>
   );
 };

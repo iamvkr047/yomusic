@@ -3,20 +3,20 @@ import { Yt } from '../api';
 import { Button, List } from 'konsta/react';
 import VideoCard from '../components/cards/VideoCard';
 import { LuLoaderCircle } from 'react-icons/lu';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import type { PlaylistType, VideoType } from '../types';
 import { MdFavorite, MdFavoriteBorder, MdPlayArrow, MdPlaylistPlay, MdShare } from 'react-icons/md';
 import { useDataStore } from '../zustand/app_data_store';
 import { handleShare } from '../utils/shareText';
 import { toastMsg } from '../utils/toastMsg';
 import { compressImage } from '../utils/getBase64FromUrl';
+import { playVideo } from '../playVideo';
 
 const PlaylistView = () => {
   const { playlistId } = useParams();
   const { playlistData, setplaylistData, playlists, setPlaylists } = useDataStore();
   const [loading, setloading] = useState(false);
   const [loadingNext, setloadingNext] = useState(false);
-  const navigate = useNavigate();
 
   const getData = async (playlistId: string) => {
     setloading(true);
@@ -176,7 +176,8 @@ const PlaylistView = () => {
                       className="w-full"
                       rounded={true}
                       onClick={() => {
-                        navigate(`/play/${playlistData.videoItems.items[0].videoId}`);
+                        // navigate(`/play/${}`);
+                        playVideo(playlistData.videoItems.items[0].videoId);
                       }}
                     >
                       <MdPlayArrow size={18} className="me-2" />
