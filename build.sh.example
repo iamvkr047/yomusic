@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Check if running on Windows (MSYS/Git Bash) vs Linux
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    echo "Running on Windows Git Bash. Mapping local apksigner..."
+    # Replace "34.0.0" with your actual build-tools version
+    APKSIGNER="/c/Users/$USER/AppData/Local/Android/Sdk/build-tools/36.0.0/apksigner"
+else
+    echo "Running on Linux env. Using global apksigner..."
+    APKSIGNER="apksigner"
+fi
+
+# Copy this file to build.sh and fill in your details
+KEYSTORE_ALIAS="placeholder_alias"
+KEYSTORE_PASSWORD="placeholder_password"
+KEYSTORE_ALIAS_PASSWORD="placeholder_password"
+
+./gradlew assembleRelease
+
+# 3. Sign the APK using the variables, make sure to have your keystores/release-key.jks
+apksigner sign --ks keystores/release-key.jks \
+  --ks-key-alias "$KEYSTORE_ALIAS" \
+  --ks-pass pass:"$KEYSTORE_PASSWORD" \
+  --key-pass pass:"$KEYSTORE_ALIAS_PASSWORD" \
+  --out app/build/outputs/apk/release/app-release-signed.apk \
+  app/build/outputs/apk/release/app-release-unsigned.apk

@@ -21,7 +21,6 @@
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
 			android:hardwareAccelerated="true"
 			android:supportsPictureInPicture="true"
-			android:screenOrientation="portrait"
             android:launchMode="singleTask"
             android:exported="true"
             android:windowSoftInputMode="adjustPan">

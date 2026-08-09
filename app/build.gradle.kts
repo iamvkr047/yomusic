@@ -3,15 +3,15 @@ plugins {
 }
 
 android {
-    namespace = "com.iamvkr.yomusic"
+    namespace = "com.iamvkryt.yomusic"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.iamvkr.yomusic"
+        applicationId = "com.iamvkryt.yomusic"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

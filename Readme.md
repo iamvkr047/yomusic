@@ -3,7 +3,7 @@
 </p>
 
 <div align="center">
-  <h1>Yo Music (Native)</h1>
+  <h1>Yo Music</h1>
 </div>
 <p align="center">Turn YouTube Videos into Your Personal Music Player — Rebuilt to be Fully Native</p>
 
@@ -26,7 +26,7 @@
 This repository is a **complete native Java rewrite** of the original hybrid project, migrated to achieve optimal background playback stability, lock screen widget sync, fluid UI transitions, and significantly reduced memory usage.
 
 > [NOTE]  
-> This project is a native conversion of the original React/Capacitor hybrid project: [iamvkr047/yomusic](https://github.com/iamvkr047/yomusic).
+> This project is a native conversion of the original React/Capacitor hybrid project: [iamvkr047/yomusic](https://github.com/iamvkr047/yomusic/tree/v1).
 
 ---
 
@@ -47,7 +47,6 @@ This repository is a **complete native Java rewrite** of the original hybrid pro
 
 ### 🎧 Background Playback
 - Continuous audio streaming even with the screen off or the app in the background.
-- Full support for headset media buttons.
 
 ### 🌷 Material 3 Design
 - Sleek and minimal mobile-first user interface implementing Material 3 widgets.
@@ -62,9 +61,15 @@ This repository is a **complete native Java rewrite** of the original hybrid pro
 
 Get the compiled application packages on GitHub releases.
 
-| Download Releases |
+> [IMPORTANT NOTE]: Backup your data before installing v2. 
+
+| Download latest Releases v2 |
 | -------------------------------------------------------------------------------------------------- |
 | [![Download APK](screenshots/get-it-on-github.png)](https://github.com/iamvkr047/yomusic/releases) |
+
+| Download v1 |
+| -------------------------------------------------------------------------------------------------- |
+| [![Download APK](screenshots/get-it-on-github.png)](https://github.com/iamvkr047/yomusic/releases/tag/v1.3.0) |
 
 ---
 
@@ -146,7 +151,7 @@ Get the compiled application packages on GitHub releases.
      ```bash
      ./gradlew assembleDebug
      ```
-   - Compile a signed Release build (Make sure your signing keys are setup in your Gradle/CI environments):
+   - Compile a signed Release build:
      ```bash
      ./gradlew assembleRelease
      ```

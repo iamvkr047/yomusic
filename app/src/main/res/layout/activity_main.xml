@@ -166,7 +166,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <com.iamvkr.yomusic.MyWebView
+        <com.iamvkryt.yomusic.MyWebView
             android:id="@+id/youtube_webview"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
