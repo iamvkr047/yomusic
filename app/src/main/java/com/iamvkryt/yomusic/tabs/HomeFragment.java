@@ -96,7 +96,13 @@ public class HomeFragment extends Fragment {
 
             SongAdapter adapter = new SongAdapter(songs, song -> {
                 if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).playSong(song);
+                    List<com.iamvkryt.yomusic.models.VideoItem> videoQueue = new ArrayList<>();
+                    for (MusicDataParser.VideoItem item : section.content) {
+                        videoQueue.add(new com.iamvkryt.yomusic.models.VideoItem(item.videoId, item.title, "", 0));
+                    }
+                    int clickIndex = songs.indexOf(song);
+                    if (clickIndex == -1) clickIndex = 0;
+                    ((MainActivity) getActivity()).playPlaylistQueue(videoQueue, clickIndex);
                 }
             });
             recyclerView.setAdapter(adapter);

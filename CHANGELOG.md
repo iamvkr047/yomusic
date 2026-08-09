@@ -1,1 +1,3 @@
-Initially stable implemetaion of native yo music.
+Fixes:
+
+- Home feed music videos now queues and play properly
