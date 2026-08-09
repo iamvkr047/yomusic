@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            overflow: hidden;
+        }
+        #player {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="player"></div>
+
+    <script>
+        // Load the IFrame Player API code asynchronously.
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        var progressInterval;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'playsinline': 1,
+                    'controls': 1, // show iframe controls
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'autoplay': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            if (window.AndroidInterface) {
+                window.AndroidInterface.onReady();
+            }
+        }
+
+        function notifyVideoData() {
+            if (player && player.getVideoData) {
+                var data = player.getVideoData();
+                if (data && window.AndroidInterface && window.AndroidInterface.onVideoLoaded) {
+                    window.AndroidInterface.onVideoLoaded(data.title || '', data.author || '', data.video_id || '');
+                }
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            var stateStr = "Unstarted";
+            switch (event.data) {
+                case -1: stateStr = "Unstarted"; break;
+                case 0: stateStr = "Ended"; stopProgressTicker(); break;
+                case 1: 
+                    stateStr = "Playing"; 
+                    notifyVideoData();
+                    startProgressTicker(); 
+                    break;
+                case 2: stateStr = "Paused"; stopProgressTicker(); break;
+                case 3: stateStr = "Buffering"; stopProgressTicker(); break;
+                case 5: stateStr = "Cued"; break;
+            }
+
+            if (window.AndroidInterface) {
+                window.AndroidInterface.onStateChange(stateStr);
+            }
+        }
+
+        function onPlayerError(event) {
+            if (window.AndroidInterface) {
+                window.AndroidInterface.onError(event.data);
+            }
+        }
+
+        function startProgressTicker() {
+            stopProgressTicker();
+            progressInterval = setInterval(function() {
+                if (player && player.getCurrentTime && player.getDuration) {
+                    var currentTime = Math.floor(player.getCurrentTime());
+                    var duration = Math.floor(player.getDuration());
+                    if (window.AndroidInterface) {
+                        window.AndroidInterface.onProgress(currentTime, duration);
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopProgressTicker() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        // Bridge functions that Java will call:
+        function loadVideo(videoId) {
+            if (player && player.loadVideoById) {
+                player.loadVideoById(videoId);
+            }
+        }
+
+        function playVideo() {
+            if (player && player.playVideo) {
+                player.playVideo();
+            }
+        }
+
+        function pauseVideo() {
+            if (player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        }
+
+        function seekTo(seconds) {
+            if (player && player.seekTo) {
+                player.seekTo(seconds, true);
+            }
+        }
+
+        function setVolume(volume) {
+            if (player && player.setVolume) {
+                player.setVolume(volume);
+            }
+        }
+
+        function mute() {
+            if (player && player.mute) {
+                player.mute();
+            }
+        }
+
+        function unmute() {
+            if (player && player.unMute) {
+                player.unMute();
+            }
+        }
+    </script>
+</body>
+</html>

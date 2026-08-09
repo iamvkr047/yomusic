@@ -1,0 +1,101 @@
+name: Android Production Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'App Version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0' # Allows you to also trigger it manually
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v${{ github.event.inputs.version }}"
+
+          # Check if the tag exists on GitHub remote
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+            echo "::error::The version $TAG_NAME already exists! Please use a unique version number."
+            exit 1
+          fi
+
+      - name: Decode Keystore
+        run: |
+          mkdir -p keystores
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystores/release-key.jks
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK Build Tools Path
+        run: |
+          # Finds the latest installed version of build-tools (e.g., 34.0.0, 35.0.0)
+          LATEST_BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          echo "$LATEST_BUILD_TOOLS" >> $GITHUB_PATH
+
+      - name: Build and Sign Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+          # Sign the APK using apksigner
+          apksigner sign --ks keystores/release-key.jks \
+            --ks-key-alias "$KEYSTORE_ALIAS" \
+            --ks-pass pass:"$KEYSTORE_PASSWORD" \
+            --key-pass pass:"$KEYSTORE_ALIAS_PASSWORD" \
+            --out app/build/outputs/apk/release/app-release-signed.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Rename APK File
+        run: |
+          OLD_PATH="app/build/outputs/apk/release/app-release-signed.apk"
+          NEW_PATH="app/build/outputs/apk/release/YoMusic_app_${{ github.event.inputs.version }}.apk"
+
+          mv "$OLD_PATH" "$NEW_PATH"
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          TAG="v${{ github.event.inputs.version }}"
+
+          git tag $TAG
+          git push origin $TAG
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
+          body_path: CHANGELOG.md
+          files: app/build/outputs/apk/release/YoMusic_${{ github.event.inputs.version }}.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
