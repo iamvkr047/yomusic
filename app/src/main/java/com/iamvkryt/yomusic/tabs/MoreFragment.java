@@ -325,12 +325,29 @@ public class MoreFragment extends Fragment {
                     
                     String thumbnail = obj.optString("thumbnail", "");
                     String channel = obj.optString("channel", "");
-                    boolean isCustom = obj.optBoolean("isCustomPlaylist", false);
-                    int total = obj.optInt("total", 0);
+                    boolean isCustom = obj.optBoolean("isCustomPlaylist", obj.optBoolean("isCustomChannel", false));
                     String nextPage = obj.optString("nextPage", "");
 
                     List<VideoItem> videoItems = new ArrayList<>();
-                    JSONArray videosArray = obj.optJSONArray("videoItems");
+                    JSONArray videosArray = null;
+                    // Handle both new and legacy data:
+                    Object videoItemsObj = obj.opt("videoItems");
+                    if (videoItemsObj instanceof JSONArray) {
+                        videosArray = (JSONArray) videoItemsObj;
+                    } else if (videoItemsObj instanceof JSONObject) {
+                        // legacy data:
+                        JSONObject videoItemsJson = (JSONObject) videoItemsObj;
+                        videosArray = videoItemsJson.optJSONArray("items");
+                        if (nextPage.isEmpty()) {
+                            nextPage = videoItemsJson.optString("nextPage", "");
+                        }
+                    }
+
+                    int total = obj.optInt("total", 0);
+                    if (total == 0 && videosArray != null) {
+                        // legacy data to create total field for new format
+                        total = videosArray.length();
+                    }
                     if (videosArray != null) {
                         for (int j = 0; j < videosArray.length(); j++) {
                             JSONObject vObj = videosArray.getJSONObject(j);
