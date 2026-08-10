@@ -222,7 +222,7 @@ public class MoreFragment extends Fragment {
     private void showAboutDialog() {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("About YoMusic")
-                .setMessage("YoMusic v1.0.0\n\nA beautiful, premium client for YouTube Music built with native Android and JavaScript APIs.")
+                .setMessage("A beautiful, premium client for YouTube Music built with native Android and JavaScript APIs.")
                 .setPositiveButton("OK", null)
                 .show();
     }
