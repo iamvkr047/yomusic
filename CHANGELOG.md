@@ -1,8 +1,7 @@
-New: Version 2.0 - Native App
+New: Version 2.1 - Native App
 
 [Note: Backup your data of v1 app before installing latest v2 update.]
 
 Fixes:
 
-- Home feed music videos now queues and play properly
-- Now sucessfully import v1 app playlist from backup file
+- Added update manager that check for updates and notify.

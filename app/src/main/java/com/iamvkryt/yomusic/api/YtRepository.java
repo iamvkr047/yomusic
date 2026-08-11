@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.iamvkryt.yomusic.AppUpdateManager;
 import com.iamvkryt.yomusic.models.Playlist;
 
 import org.json.JSONObject;
@@ -102,6 +103,7 @@ public class YtRepository {
                     Log.w(TAG, "Cached data parse failed, fetching fresh data");
                 }
 
+                AppUpdateManager.checkForUpdates(context, true, null);
                 Log.d(TAG, "Fetching fresh home feed from YouTube (country=" + country + ")");
                 YtInitDataExtractor.YtInitResult initResult = extractor.getYoutubeInitData(MUSIC_CHANNEL_URL, country);
                 if (initResult == null || initResult.initData == null) {

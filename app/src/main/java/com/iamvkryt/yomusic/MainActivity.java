@@ -165,6 +165,23 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateUpdateBadgeVisibility();
+    }
+
+    public void updateUpdateBadgeVisibility() {
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar != null && toolbar.getMenu() != null) {
+            android.view.MenuItem updateItem = toolbar.getMenu().findItem(R.id.action_update);
+            if (updateItem != null) {
+                boolean show = AppUpdateManager.isUpdateAvailable(this);
+                updateItem.setVisible(show);
+            }
+        }
+    }
+
     private void setupToolbar() {
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setOnMenuItemClickListener(item -> {
@@ -172,9 +189,13 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.action_search) {
                 openSearchPage();
                 return true;
+            } else if (itemId == R.id.action_update) {
+                AppUpdateManager.showUpdateDialog(this);
+                return true;
             }
             return false;
         });
+        updateUpdateBadgeVisibility();
     }
 
     private void setupBackPressHandling() {

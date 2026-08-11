@@ -19,6 +19,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.iamvkryt.yomusic.AppUpdateManager;
 import com.iamvkryt.yomusic.MainActivity;
 import com.iamvkryt.yomusic.R;
 import com.iamvkryt.yomusic.models.Playlist;
@@ -427,92 +428,33 @@ public class MoreFragment extends Fragment {
         }
     }
 
-    private int compareVersions(String version1, String version2) {
-        String v1 = version1.replaceAll("(?i)^v", "").trim();
-        String v2 = version2.replaceAll("(?i)^v", "").trim();
-
-        String[] vals1 = v1.split("\\.");
-        String[] vals2 = v2.split("\\.");
-        int i = 0;
-        while (i < vals1.length || i < vals2.length) {
-            int num1 = i < vals1.length ? Integer.parseInt(vals1[i].replaceAll("[^0-9]", "")) : 0;
-            int num2 = i < vals2.length ? Integer.parseInt(vals2[i].replaceAll("[^0-9]", "")) : 0;
-            
-            if (num1 < num2) {
-                return -1;
-            } else if (num1 > num2) {
-                return 1;
-            }
-            i++;
-        }
-        return 0;
-    }
-
     private void checkUpdates(boolean showToastIfLatest) {
         if (showToastIfLatest) {
             Toast.makeText(getContext(), "Checking for updates...", Toast.LENGTH_SHORT).show();
         }
-        new Thread(() -> {
-            try {
-                OkHttpClient client = new OkHttpClient();
-                Request request = new Request.Builder()
-                        .url("https://api.github.com/repos/iamvkr047/yomusic/releases/latest")
-                        .header("User-Agent", "YoMusic-Android")
-                        .build();
-                
-                try (Response response = client.newCall(request).execute()) {
-                    if (!response.isSuccessful()) {
-                        requireActivity().runOnUiThread(() -> 
-                            Toast.makeText(getContext(), "Failed to check for updates: " + response.code(), Toast.LENGTH_SHORT).show()
-                        );
-                        return;
+        AppUpdateManager.checkForUpdates(requireContext(), true, new AppUpdateManager.UpdateCheckCallback() {
+            @Override
+            public void onUpdateStatusChecked(boolean updateAvailable, String tagName, String changelog, String releaseUrl) {
+                if (!isAdded()) return;
+                if (updateAvailable) {
+                    AppUpdateManager.showUpdateAvailableDialog(requireContext(), tagName, changelog, releaseUrl);
+                } else {
+                    if (showToastIfLatest) {
+                        new MaterialAlertDialogBuilder(requireContext())
+                                .setTitle("App Update")
+                                .setMessage("You are on the latest version (" + AppUpdateManager.getCurrentAppVersionName(requireContext()) + ").")
+                                .setPositiveButton("OK", null)
+                                .show();
                     }
-                    
-                    String body = response.body().string();
-                    JSONObject data = new JSONObject(body);
-                    String tagName = data.optString("tag_name", "");
-                    String releaseUrl = data.optString("html_url", "");
-                    String changeLog = data.optString("body", "");
-
-                    String currentVersion = getCurrentAppVersionName();
-
-                    requireActivity().runOnUiThread(() -> {
-                        if (!tagName.isEmpty() && compareVersions(currentVersion, tagName) < 0) {
-                            showUpdateAvailableDialog(tagName, changeLog, releaseUrl);
-                        } else {
-                            if (showToastIfLatest) {
-                                new MaterialAlertDialogBuilder(requireContext())
-                                        .setTitle("App Update")
-                                        .setMessage("You are on the latest version (" + currentVersion + ").")
-                                        .setPositiveButton("OK", null)
-                                        .show();
-                            }
-                        }
-                    });
                 }
-            } catch (Exception e) {
-                Log.e("MoreFragment", "Check updates failed", e);
-                requireActivity().runOnUiThread(() -> 
-                    Toast.makeText(getContext(), "Error checking updates: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
             }
-        }).start();
-    }
 
-    private void showUpdateAvailableDialog(String tagName, String changeLog, String releaseUrl) {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Update Available")
-                .setMessage("A new version (" + tagName + ") is available.\n\nChangelog:\n" + changeLog)
-                .setPositiveButton("Download Update", (dialog, which) -> {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(releaseUrl));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        Toast.makeText(getContext(), "Could not open browser", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Later", null)
-                .show();
+            @Override
+            public void onError(String message) {
+                if (!isAdded()) return;
+                Toast.makeText(getContext(), "Error checking updates: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showPrivacyPolicyDialog() {
