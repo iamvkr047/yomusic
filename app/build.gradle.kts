@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace = "com.iamvkryt.yomusic"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.iamvkryt.yomusic"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 6
         versionName = "2.1"
 
