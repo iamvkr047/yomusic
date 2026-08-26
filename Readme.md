@@ -130,7 +130,7 @@ Get the compiled application packages on GitHub releases.
 | Requirement                 | Version          | Download                                               |
 | --------------------------- | ---------------- | ------------------------------------------------------ |
 | **Android Studio**          | Ladybug or later | [Android Studio](https://developer.android.com/studio) |
-| **Java JDK**                | 21 (recommended) | [OpenJDK](https://jdk.java.net/)                       |
+| **Java JDK**                | 8 < 21 (recommended) < 23 | [OpenJDK](https://jdk.java.net/)                       |
 | **Android SDK**             | API 26+          | Installed via Android Studio SDK Manager               |
 
 ### Setup & Build

@@ -51,6 +51,7 @@ import com.iamvkryt.yomusic.tabs.HomeFragment;
 import com.iamvkryt.yomusic.tabs.PlaylistFragment;
 import com.iamvkryt.yomusic.tabs.FavoriteFragment;
 import com.iamvkryt.yomusic.tabs.MoreFragment;
+import com.iamvkryt.yomusic.utils.YouTubeLinkParser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPlaying = false;
     private int currentPosition = 0;
     private int duration = 0;
+    private boolean isPlayerReady = false;
+    private String pendingVideoId = null;
 
     // Playlist Queue
     private final List<Song> playlist = new ArrayList<>();
@@ -163,6 +166,37 @@ public class MainActivity extends AppCompatActivity {
             int count = getSupportFragmentManager().getBackStackEntryCount();
             bottomNav.setVisibility(count > 0 ? View.GONE : View.VISIBLE);
         });
+
+        handleIncomingIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingIntent(intent);
+    }
+
+    private void handleIncomingIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        if (Intent.ACTION_VIEW.equals(action) || Intent.ACTION_SEND.equals(action)) {
+            YouTubeLinkParser.ParseResult result = YouTubeLinkParser.parseIntent(intent);
+            if (result.type == YouTubeLinkParser.ResultType.SONG) {
+                String videoId = result.id;
+                Song song = new Song(videoId, "Loading song...", "YouTube", "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg");
+                playSong(song);
+                Toast.makeText(this, "Playing shared YouTube song...", Toast.LENGTH_SHORT).show();
+            } else if (result.type == YouTubeLinkParser.ResultType.PLAYLIST) {
+                String playlistId = result.id;
+                openPlaylistDetail(playlistId);
+                Toast.makeText(this, "Loading shared YouTube playlist...", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Invalid or unsupported YouTube link", Toast.LENGTH_SHORT).show();
+            }
+            // Clear action so orientation change / recreation doesn't trigger intent again
+            intent.setAction(null);
+        }
     }
 
     @Override
@@ -426,7 +460,11 @@ public class MainActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new YoutubePlayerBridge(new YoutubePlayerBridge.YoutubePlayerListener() {
             @Override
             public void onReady() {
-                // Engine ready
+                isPlayerReady = true;
+                if (pendingVideoId != null) {
+                    loadVideo(pendingVideoId);
+                    pendingVideoId = null;
+                }
             }
 
             @Override
@@ -588,8 +626,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadVideo(String videoId) {
-        if (webView != null) {
-            webView.post(() -> webView.evaluateJavascript("loadVideo('" + videoId + "');", null));
+        if (isPlayerReady) {
+            if (webView != null) {
+                webView.post(() -> webView.evaluateJavascript("loadVideo('" + videoId + "');", null));
+            }
+        } else {
+            pendingVideoId = videoId;
         }
     }
 

@@ -22,13 +22,13 @@
 
     <script>
         // Load the IFrame Player API code asynchronously.
-        var tag = document.createElement('script');
+        const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
+        const firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        var player;
-        var progressInterval;
+        let player;
+        let progressInterval;
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
@@ -49,7 +49,13 @@
             });
         }
 
+        let pendingVideoId = null;
+
         function onPlayerReady(event) {
+            if (pendingVideoId && player && player.loadVideoById) {
+                player.loadVideoById(pendingVideoId);
+                pendingVideoId = null;
+            }
             if (window.AndroidInterface) {
                 window.AndroidInterface.onReady();
             }
@@ -57,7 +63,7 @@
 
         function notifyVideoData() {
             if (player && player.getVideoData) {
-                var data = player.getVideoData();
+                const data = player.getVideoData();
                 if (data && window.AndroidInterface && window.AndroidInterface.onVideoLoaded) {
                     window.AndroidInterface.onVideoLoaded(data.title || '', data.author || '', data.video_id || '');
                 }
@@ -65,7 +71,7 @@
         }
 
         function onPlayerStateChange(event) {
-            var stateStr = "Unstarted";
+            let stateStr = "Unstarted";
             switch (event.data) {
                 case -1: stateStr = "Unstarted"; break;
                 case 0: stateStr = "Ended"; stopProgressTicker(); break;
@@ -94,8 +100,8 @@
             stopProgressTicker();
             progressInterval = setInterval(function() {
                 if (player && player.getCurrentTime && player.getDuration) {
-                    var currentTime = Math.floor(player.getCurrentTime());
-                    var duration = Math.floor(player.getDuration());
+                    const currentTime = Math.floor(player.getCurrentTime());
+                    const duration = Math.floor(player.getDuration());
                     if (window.AndroidInterface) {
                         window.AndroidInterface.onProgress(currentTime, duration);
                     }
@@ -114,6 +120,8 @@
         function loadVideo(videoId) {
             if (player && player.loadVideoById) {
                 player.loadVideoById(videoId);
+            } else {
+                pendingVideoId = videoId;
             }
         }
 
