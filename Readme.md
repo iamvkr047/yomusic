@@ -8,7 +8,7 @@
 <p align="center">Turn YouTube Videos into Your Personal Music Player — Rebuilt to be Fully Native</p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/version-v1.0.0-blue">
+<img src="https://img.shields.io/badge/version-v2.2.0-blue">
 <img src="https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026%2B)-brightgreen">
 <a href="https://opensource.org/licenses/"><img src="https://img.shields.io/badge/License-GPL%20v3-green.svg" alt="license" /></a>
 </p>
