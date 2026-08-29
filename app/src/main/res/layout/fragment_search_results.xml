@@ -14,7 +14,7 @@
         android:orientation="vertical"
         android:visibility="visible">
 
-        <com.google.android.material.progressindicator.CircularProgressIndicator
+        <com.google.android.material.loadingindicator.LoadingIndicator
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:indeterminate="true"
@@ -83,7 +83,7 @@
                 android:visibility="gone"/>
 
             <!-- Load more progress -->
-            <com.google.android.material.progressindicator.CircularProgressIndicator
+            <com.google.android.material.loadingindicator.LoadingIndicator
                 android:id="@+id/load_next_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

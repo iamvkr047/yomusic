@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
+import com.google.android.material.loadingindicator.LoadingIndicator;
 import com.iamvkryt.yomusic.adapters.SearchResultsAdapter;
 import com.iamvkryt.yomusic.api.SearchDataParser;
 import com.iamvkryt.yomusic.api.YtRepository;
@@ -42,7 +42,7 @@ public class SearchResultsFragment extends Fragment {
     private TextView tvResultsTitle;
     private RecyclerView rvSearchResults;
     private MaterialButton btnLoadMore;
-    private CircularProgressIndicator loadNextProgress;
+    private LoadingIndicator loadNextProgress;
 
     private SearchResultsAdapter adapter;
     private final List<SearchResultItem> resultList = new ArrayList<>();
