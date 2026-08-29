@@ -13,8 +13,14 @@ public class MediaButtonReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() == null) return;
 
-        if (MainActivity.getInstance() != null) {
-            MainActivity.getInstance().handleNotificationAction(intent.getAction());
+        Intent serviceIntent = new Intent(context, PlaybackService.class);
+        serviceIntent.setAction(intent.getAction());
+        try {
+            context.startService(serviceIntent);
+        } catch (Exception e) {
+            if (MainActivity.getInstance() != null) {
+                MainActivity.getInstance().handleNotificationAction(intent.getAction());
+            }
         }
     }
 }

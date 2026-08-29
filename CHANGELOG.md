@@ -6,4 +6,6 @@ Features:
 
 - Update to android 16 - sdk 35
 - Added Deep linking for youtube links for shared url.
-- Performance improvment and bug fixes
+- Implemented background playback stabilization using a Foreground Service (fixes song pauses after screen goes idle).
+- Integrated native lock screen widget and headset button controllers (play, pause, skip) via MediaSession.
+- Performance improvement and bug fixes

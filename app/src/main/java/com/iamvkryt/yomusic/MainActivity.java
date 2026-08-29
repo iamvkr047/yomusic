@@ -3,12 +3,16 @@ package com.iamvkryt.yomusic;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
+import androidx.core.content.ContextCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.view.View;
 import android.view.ViewGroup;
@@ -59,9 +63,45 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static MainActivity instance;
-    private static final String CHANNEL_ID = "yomusic_playback_channel";
-    private static final int NOTIFICATION_ID = 1001;
-    private MediaSessionCompat mediaSession;
+    private PlaybackService playbackService;
+    private boolean isServiceBound = false;
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            PlaybackService.LocalBinder binder = (PlaybackService.LocalBinder) service;
+            playbackService = binder.getService();
+            isServiceBound = true;
+            playbackService.setCallback(new PlaybackService.Callback() {
+                @Override
+                public void onPlay() {
+                    playVideo();
+                }
+
+                @Override
+                public void onPause() {
+                    pauseVideo();
+                }
+
+                @Override
+                public void onNext() {
+                    playNextSong();
+                }
+
+                @Override
+                public void onPrevious() {
+                    playPreviousSong();
+                }
+            });
+            updateServicePlaybackState();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            playbackService = null;
+            isServiceBound = false;
+        }
+    };
 
     public static MainActivity getInstance() {
         return instance;
@@ -156,9 +196,8 @@ public class MainActivity extends AppCompatActivity {
         setupYouTubeWebView();
         setupBackPressHandling();
         
-        createNotificationChannel();
         checkNotificationPermission();
-        setupMediaSession();
+        bindPlaybackService();
 
         // Hide bottom nav when any detail/overlay page is on the back stack
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
@@ -684,25 +723,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setupMediaSession() {
-        mediaSession = new MediaSessionCompat(this, "YoMusicMediaSession");
-        mediaSession.setActive(true);
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Media Playback",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("YoMusic player notification controls");
-            channel.setShowBadge(false);
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
-        }
+    private void bindPlaybackService() {
+        Intent intent = new Intent(this, PlaybackService.class);
+        startService(intent);
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     private void checkNotificationPermission() {
@@ -714,106 +738,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void handleNotificationAction(String action) {
-        if (action == null) return;
-        switch (action) {
-            case MediaButtonReceiver.ACTION_PREVIOUS:
-                playPreviousSong();
-                break;
-            case MediaButtonReceiver.ACTION_PLAY_PAUSE:
-                if (isPlaying) {
-                    pauseVideo();
-                } else {
-                    playVideo();
-                }
-                break;
-            case MediaButtonReceiver.ACTION_NEXT:
-                playNextSong();
-                break;
+        if (playbackService != null) {
+            playbackService.handleAction(action);
+        } else {
+            if (action == null) return;
+            switch (action) {
+                case MediaButtonReceiver.ACTION_PREVIOUS:
+                    playPreviousSong();
+                    break;
+                case MediaButtonReceiver.ACTION_PLAY_PAUSE:
+                    if (isPlaying) {
+                        pauseVideo();
+                    } else {
+                        playVideo();
+                    }
+                    break;
+                case MediaButtonReceiver.ACTION_NEXT:
+                    playNextSong();
+                    break;
+            }
         }
     }
 
     public void showMediaNotification() {
+        updateServicePlaybackState();
+    }
+
+    public void updateServicePlaybackState() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
         }
-
-        Intent contentIntent = new Intent(this, MainActivity.class);
-        contentIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingContentIntent = PendingIntent.getActivity(
-                this, 0, contentIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        Intent prevIntent = new Intent(this, MediaButtonReceiver.class).setAction(MediaButtonReceiver.ACTION_PREVIOUS);
-        PendingIntent prevPendingIntent = PendingIntent.getBroadcast(
-                this, 1, prevIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        Intent playPauseIntent = new Intent(this, MediaButtonReceiver.class).setAction(MediaButtonReceiver.ACTION_PLAY_PAUSE);
-        PendingIntent playPausePendingIntent = PendingIntent.getBroadcast(
-                this, 2, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        Intent nextIntent = new Intent(this, MediaButtonReceiver.class).setAction(MediaButtonReceiver.ACTION_NEXT);
-        PendingIntent nextPendingIntent = PendingIntent.getBroadcast(
-                this, 3, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        int playPauseIcon = isPlaying ? R.drawable.ic_pause : R.drawable.ic_play;
-
-        if (currentThumbnailUrl != null && !currentThumbnailUrl.isEmpty()) {
-            Glide.with(getApplicationContext())
-                    .asBitmap()
-                    .load(currentThumbnailUrl)
-                    .into(new CustomTarget<Bitmap>() {
-                        @Override
-                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
-                            buildAndPostNotification(resource, pendingContentIntent, prevPendingIntent, playPausePendingIntent, nextPendingIntent, playPauseIcon);
-                        }
-
-                        @Override
-                        public void onLoadCleared(@Nullable android.graphics.drawable.Drawable placeholder) {}
-
-                        @Override
-                        public void onLoadFailed(@Nullable android.graphics.drawable.Drawable errorDrawable) {
-                            buildAndPostNotification(null, pendingContentIntent, prevPendingIntent, playPausePendingIntent, nextPendingIntent, playPauseIcon);
-                        }
-                    });
+        if (isServiceBound && playbackService != null) {
+            playbackService.updatePlaybackState(currentTitle, currentArtist, currentThumbnailUrl, isPlaying);
         } else {
-            buildAndPostNotification(null, pendingContentIntent, prevPendingIntent, playPausePendingIntent, nextPendingIntent, playPauseIcon);
-        }
-    }
-
-    private void buildAndPostNotification(Bitmap thumbnail, PendingIntent contentIntent,
-                                          PendingIntent prevIntent, PendingIntent playPauseIntent,
-                                          PendingIntent nextIntent, int playPauseIcon) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_music_note)
-                .setLargeIcon(thumbnail)
-                .setContentTitle(currentTitle)
-                .setContentText(currentArtist)
-                .setContentIntent(contentIntent)
-                .setOngoing(isPlaying)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .addAction(R.drawable.ic_skip_previous, "Previous", prevIntent)
-                .addAction(playPauseIcon, isPlaying ? "Pause" : "Play", playPauseIntent)
-                .addAction(R.drawable.ic_skip_next, "Next", nextIntent)
-                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                        .setShowActionsInCompactView(0, 1, 2)
-                        .setMediaSession(mediaSession != null ? mediaSession.getSessionToken() : null));
-
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
-            manager.notify(NOTIFICATION_ID, builder.build());
+            Intent serviceIntent = new Intent(this, PlaybackService.class);
+            if (isPlaying) {
+                ContextCompat.startForegroundService(this, serviceIntent);
+            }
+            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
     }
 
     @Override
     protected void onDestroy() {
-        if (mediaSession != null) {
-            mediaSession.release();
-        }
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
-            manager.cancel(NOTIFICATION_ID);
+        if (isServiceBound) {
+            unbindService(serviceConnection);
+            isServiceBound = false;
         }
         if (instance == this) {
             instance = null;
