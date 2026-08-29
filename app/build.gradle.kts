@@ -10,8 +10,8 @@ android {
         applicationId = "com.iamvkryt.yomusic"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "2.2"
+        versionCode = 8
+        versionName = "2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

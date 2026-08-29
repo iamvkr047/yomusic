@@ -1,6 +1,4 @@
-New: Version 2.2 - Native App
-
-[Note: Backup your data of v1 app before installing latest v2 update.]
+New: Version 2.3 - Native App
 
 Features:
 
