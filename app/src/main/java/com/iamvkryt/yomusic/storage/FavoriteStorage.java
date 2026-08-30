@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.iamvkryt.yomusic.db.AppDatabase;
+import com.iamvkryt.yomusic.db.dao.FavoriteDao;
+import com.iamvkryt.yomusic.db.entity.FavoriteEntity;
 import com.iamvkryt.yomusic.models.VideoItem;
 
 import org.json.JSONArray;
@@ -12,26 +15,39 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Storage facade for Favorites, powered by Room Database.
+ * Maintains full backward compatibility with existing callers.
+ */
 public class FavoriteStorage {
     private static final String TAG = "FavoriteStorage";
     private static final String PREFS_NAME = "YoMusicPrefs";
     private static final String KEY_SAVED_FAVORITES = "saved_favorites";
 
-    private final SharedPreferences prefs;
+    private final FavoriteDao favoriteDao;
+    private final SharedPreferences legacyPrefs;
 
     public FavoriteStorage(Context context) {
-        this.prefs = context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        Context appContext = context.getApplicationContext();
+        this.favoriteDao = AppDatabase.getInstance(appContext).favoriteDao();
+        this.legacyPrefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        // Perform 1-time migration from SharedPreferences to Room DB if legacy data exists
+        migrateLegacySharedPreferencesIfNeeded();
     }
 
-    public synchronized List<VideoItem> loadFavorites() {
-        List<VideoItem> favorites = new ArrayList<>();
-        String jsonString = prefs.getString(KEY_SAVED_FAVORITES, null);
+    private synchronized void migrateLegacySharedPreferencesIfNeeded() {
+        String jsonString = legacyPrefs.getString(KEY_SAVED_FAVORITES, null);
         if (jsonString == null || jsonString.isEmpty()) {
-            return favorites;
+            return;
         }
 
         try {
+            Log.d(TAG, "Migrating legacy SharedPreferences favorites to Room DB...");
             JSONArray array = new JSONArray(jsonString);
+            List<FavoriteEntity> migratedEntities = new ArrayList<>();
+            long now = System.currentTimeMillis();
+
             for (int i = 0; i < array.length(); i++) {
                 JSONObject obj = array.getJSONObject(i);
                 String videoId = obj.optString("videoId", "");
@@ -40,80 +56,103 @@ public class FavoriteStorage {
                 int duration = obj.optInt("duration", 0);
 
                 if (!videoId.isEmpty()) {
-                    favorites.add(new VideoItem(videoId, title, channel, duration));
+                    // Decrement addedAt by index to preserve order
+                    migratedEntities.add(new FavoriteEntity(videoId, title, channel, duration, now - (i * 1000L)));
                 }
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading favorites: " + e.getMessage());
-        }
 
-        return favorites;
+            if (!migratedEntities.isEmpty()) {
+                favoriteDao.insertAll(migratedEntities);
+                Log.d(TAG, "Successfully migrated " + migratedEntities.size() + " favorites to Room DB.");
+            }
+
+            // Remove legacy key after successful migration
+            legacyPrefs.edit().remove(KEY_SAVED_FAVORITES).apply();
+        } catch (Exception e) {
+            Log.e(TAG, "Error migrating legacy favorites: " + e.getMessage());
+        }
+    }
+
+    public synchronized List<VideoItem> loadFavorites() {
+        List<VideoItem> result = new ArrayList<>();
+        try {
+            List<FavoriteEntity> entities = favoriteDao.getAllFavorites();
+            for (FavoriteEntity entity : entities) {
+                result.add(new VideoItem(
+                        entity.getVideoId(),
+                        entity.getTitle(),
+                        entity.getChannel(),
+                        entity.getDuration()
+                ));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading favorites from Room DB: " + e.getMessage());
+        }
+        return result;
     }
 
     public synchronized void saveFavorites(List<VideoItem> favorites) {
         try {
-            JSONArray array = new JSONArray();
-            for (VideoItem v : favorites) {
-                JSONObject obj = new JSONObject();
-                obj.put("videoId", v.getVideoId());
-                obj.put("title", v.getTitle());
-                obj.put("channel", v.getChannel());
-                obj.put("duration", v.getDuration());
-                array.put(obj);
+            favoriteDao.deleteAll();
+            if (favorites != null && !favorites.isEmpty()) {
+                List<FavoriteEntity> entities = new ArrayList<>();
+                long now = System.currentTimeMillis();
+                for (int i = 0; i < favorites.size(); i++) {
+                    VideoItem v = favorites.get(i);
+                    if (v != null && v.getVideoId() != null && !v.getVideoId().isEmpty()) {
+                        entities.add(new FavoriteEntity(
+                                v.getVideoId(),
+                                v.getTitle(),
+                                v.getChannel(),
+                                v.getDuration(),
+                                now - (i * 1000L)
+                        ));
+                    }
+                }
+                favoriteDao.insertAll(entities);
             }
-            prefs.edit().putString(KEY_SAVED_FAVORITES, array.toString()).apply();
         } catch (Exception e) {
-            Log.e(TAG, "Error saving favorites: " + e.getMessage());
+            Log.e(TAG, "Error saving favorites to Room DB: " + e.getMessage());
         }
     }
 
     public synchronized boolean isFavorite(String videoId) {
         if (videoId == null || videoId.isEmpty()) return false;
-        List<VideoItem> list = loadFavorites();
-        for (VideoItem item : list) {
-            if (item.getVideoId().equals(videoId)) {
-                return true;
-            }
+        try {
+            return favoriteDao.isFavorite(videoId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking isFavorite for " + videoId + ": " + e.getMessage());
+            return false;
         }
-        return false;
     }
 
     public synchronized void addFavorite(VideoItem video) {
-        if (video == null || video.getVideoId().isEmpty()) return;
-        List<VideoItem> list = loadFavorites();
-        
-        // Check if already exists
-        boolean found = false;
-        for (VideoItem item : list) {
-            if (item.getVideoId().equals(video.getVideoId())) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            list.add(0, video);
-            saveFavorites(list);
+        if (video == null || video.getVideoId() == null || video.getVideoId().isEmpty()) return;
+        try {
+            FavoriteEntity entity = new FavoriteEntity(
+                    video.getVideoId(),
+                    video.getTitle(),
+                    video.getChannel(),
+                    video.getDuration(),
+                    System.currentTimeMillis()
+            );
+            favoriteDao.insert(entity);
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding favorite: " + e.getMessage());
         }
     }
 
     public synchronized void removeFavorite(String videoId) {
         if (videoId == null || videoId.isEmpty()) return;
-        List<VideoItem> list = loadFavorites();
-        VideoItem toRemove = null;
-        for (VideoItem item : list) {
-            if (item.getVideoId().equals(videoId)) {
-                toRemove = item;
-                break;
-            }
-        }
-        if (toRemove != null) {
-            list.remove(toRemove);
-            saveFavorites(list);
+        try {
+            favoriteDao.deleteById(videoId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error removing favorite: " + e.getMessage());
         }
     }
 
     public synchronized boolean toggleFavorite(VideoItem video) {
-        if (video == null || video.getVideoId().isEmpty()) return false;
+        if (video == null || video.getVideoId() == null || video.getVideoId().isEmpty()) return false;
         if (isFavorite(video.getVideoId())) {
             removeFavorite(video.getVideoId());
             return false;
