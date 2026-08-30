@@ -51,9 +51,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.iamvkryt.yomusic.models.VideoItem;
+import com.iamvkryt.yomusic.storage.HistoryStorage;
 import com.iamvkryt.yomusic.tabs.HomeFragment;
 import com.iamvkryt.yomusic.tabs.PlaylistFragment;
 import com.iamvkryt.yomusic.tabs.FavoriteFragment;
+import com.iamvkryt.yomusic.tabs.HistoryFragment;
 import com.iamvkryt.yomusic.tabs.MoreFragment;
 import com.iamvkryt.yomusic.utils.YouTubeLinkParser;
 
@@ -139,6 +141,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPlayerReady = false;
     private String pendingVideoId = null;
 
+    // Storage & History
+    private HistoryStorage historyStorage;
+
     // Playlist Queue
     private final List<Song> playlist = new ArrayList<>();
     private int currentIndex = -1;
@@ -147,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         instance = this;
+        historyStorage = new HistoryStorage(this);
         
 
         EdgeToEdge.enable(this);
@@ -593,6 +599,13 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
+    public void openHistoryPage() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new HistoryFragment())
+                .addToBackStack(null)
+                .commit();
+    }
+
     public void notifyFavoriteChanged() {
         if (favoriteFragment != null && favoriteFragment.isAdded()) {
             favoriteFragment.loadFavoritesData();
@@ -626,6 +639,10 @@ public class MainActivity extends AppCompatActivity {
         currentTitle = song.getTitle();
         currentArtist = song.getArtist();
         currentThumbnailUrl = song.getThumbnailUrl();
+
+        if (historyStorage != null && currentVideoId != null && !currentVideoId.isEmpty()) {
+            historyStorage.addToHistory(new VideoItem(currentVideoId, currentTitle, currentArtist, 0));
+        }
 
         // Show Mini Player UI
         miniPlayerContainer.setVisibility(View.VISIBLE);

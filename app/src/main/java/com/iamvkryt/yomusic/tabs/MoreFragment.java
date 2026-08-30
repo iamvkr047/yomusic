@@ -120,6 +120,11 @@ public class MoreFragment extends Fragment {
         view.findViewById(R.id.btn_region).setOnClickListener(v -> showRegionSelectionDialog());
         view.findViewById(R.id.btn_theme).setOnClickListener(v -> showThemeSelectionDialog());
         view.findViewById(R.id.btn_your_data).setOnClickListener(v -> showImportExportDialog());
+        view.findViewById(R.id.btn_history).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openHistoryPage();
+            }
+        });
         view.findViewById(R.id.btn_update).setOnClickListener(v -> checkUpdates(true));
         view.findViewById(R.id.btn_privacy_policy).setOnClickListener(v -> showPrivacyPolicyDialog());
         view.findViewById(R.id.btn_share_app).setOnClickListener(v -> shareApp());

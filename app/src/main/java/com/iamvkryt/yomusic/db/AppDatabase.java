@@ -10,8 +10,10 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.iamvkryt.yomusic.db.dao.FavoriteDao;
+import com.iamvkryt.yomusic.db.dao.HistoryDao;
 import com.iamvkryt.yomusic.db.dao.PlaylistDao;
 import com.iamvkryt.yomusic.db.entity.FavoriteEntity;
+import com.iamvkryt.yomusic.db.entity.HistoryEntity;
 import com.iamvkryt.yomusic.db.entity.PlaylistEntity;
 import com.iamvkryt.yomusic.db.entity.PlaylistSongEntity;
 
@@ -19,7 +21,7 @@ import com.iamvkryt.yomusic.db.entity.PlaylistSongEntity;
  * Main Room Database for YoMusic.
  * Manages connections and DAOs.
  */
-@Database(entities = {FavoriteEntity.class, PlaylistEntity.class, PlaylistSongEntity.class}, version = 1, exportSchema = false)
+@Database(entities = {FavoriteEntity.class, PlaylistEntity.class, PlaylistSongEntity.class, HistoryEntity.class}, version = 1, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "yomusic_database.db";
@@ -27,6 +29,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract FavoriteDao favoriteDao();
     public abstract PlaylistDao playlistDao();
+    public abstract HistoryDao historyDao();
 
     // private static final Migration MIGRATION_1_2 = new Migration(1, 2) {
     //     @Override
