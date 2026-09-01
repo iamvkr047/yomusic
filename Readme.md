@@ -8,7 +8,7 @@
 <p align="center">Turn YouTube Videos into Your Personal Music Player — Rebuilt to be Fully Native</p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/version-v2.2.0-blue">
+<img src="https://img.shields.io/badge/version-v2.4.0-blue">
 <img src="https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026%2B)-brightgreen">
 <a href="https://opensource.org/licenses/"><img src="https://img.shields.io/badge/License-GPL%20v3-green.svg" alt="license" /></a>
 </p>
@@ -129,7 +129,7 @@ Get the compiled application packages on GitHub releases.
 
 | Requirement                 | Version          | Download                                               |
 | --------------------------- | ---------------- | ------------------------------------------------------ |
-| **Android Studio**          | Ladybug or later | [Android Studio](https://developer.android.com/studio) |
+| **Android Studio**          | quail3 | [Android Studio](https://developer.android.com/studio) |
 | **Java JDK**                | 8 < 21 (recommended) < 23 | [OpenJDK](https://jdk.java.net/)                       |
 | **Android SDK**             | API 26+          | Installed via Android Studio SDK Manager               |
 
