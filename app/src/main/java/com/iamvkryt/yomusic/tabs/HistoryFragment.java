@@ -12,10 +12,9 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.iamvkryt.yomusic.MainActivity;
 import com.iamvkryt.yomusic.R;
-import com.iamvkryt.yomusic.adapters.PlaylistVideoAdapter;
+import com.iamvkryt.yomusic.adapters.HistoryAdapter;
 import com.iamvkryt.yomusic.models.VideoItem;
 import com.iamvkryt.yomusic.storage.HistoryStorage;
 
@@ -26,7 +25,7 @@ public class HistoryFragment extends Fragment {
 
     private View emptyStateContainer;
     private RecyclerView rvHistory;
-    private PlaylistVideoAdapter adapter;
+    private HistoryAdapter adapter;
     private final List<VideoItem> historyList = new ArrayList<>();
     private HistoryStorage historyStorage;
 
@@ -45,17 +44,26 @@ public class HistoryFragment extends Fragment {
 
         historyStorage = new HistoryStorage(requireContext());
 
-        adapter = new PlaylistVideoAdapter(historyList, new PlaylistVideoAdapter.OnVideoClickListener() {
+        adapter = new HistoryAdapter(historyList, new HistoryAdapter.OnHistoryItemClickListener() {
             @Override
-            public void onVideoClick(VideoItem video, int position) {
+            public void onItemClick(VideoItem video, int position) {
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).playPlaylistQueue(historyList, position);
                 }
             }
 
             @Override
-            public void onVideoLongClick(VideoItem video, int position) {
-                showRemoveHistoryDialog(video, position);
+            public void onRemoveClick(VideoItem video, int position) {
+                historyStorage.removeFromHistory(video.getVideoId());
+                historyList.remove(position);
+                adapter.notifyItemRemoved(position);
+                adapter.notifyItemRangeChanged(position, historyList.size());
+                Toast.makeText(getContext(), "Removed from history", Toast.LENGTH_SHORT).show();
+
+                if (historyList.isEmpty()) {
+                    emptyStateContainer.setVisibility(View.VISIBLE);
+                    rvHistory.setVisibility(View.GONE);
+                }
             }
         });
 
@@ -101,25 +109,5 @@ public class HistoryFragment extends Fragment {
             if (emptyStateContainer != null) emptyStateContainer.setVisibility(View.GONE);
             if (rvHistory != null) rvHistory.setVisibility(View.VISIBLE);
         }
-    }
-
-    private void showRemoveHistoryDialog(VideoItem video, int position) {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Remove from History?")
-                .setMessage("Are you sure you want to remove '" + video.getTitle() + "' from your history?")
-                .setPositiveButton("Remove", (dialog, which) -> {
-                    historyStorage.removeFromHistory(video.getVideoId());
-                    historyList.remove(position);
-                    adapter.notifyItemRemoved(position);
-                    adapter.notifyItemRangeChanged(position, historyList.size());
-                    Toast.makeText(getContext(), "Removed from history", Toast.LENGTH_SHORT).show();
-
-                    if (historyList.isEmpty()) {
-                        emptyStateContainer.setVisibility(View.VISIBLE);
-                        rvHistory.setVisibility(View.GONE);
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
 }
