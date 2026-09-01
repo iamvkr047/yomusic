@@ -27,6 +27,10 @@ import com.iamvkryt.yomusic.models.VideoItem;
 import com.iamvkryt.yomusic.storage.FavoriteStorage;
 import com.iamvkryt.yomusic.storage.PlaylistStorage;
 import com.iamvkryt.yomusic.storage.PlaylistSessionCache;
+import com.iamvkryt.yomusic.db.AppDatabase;
+import com.iamvkryt.yomusic.db.entity.FavoriteEntity;
+import com.iamvkryt.yomusic.db.entity.PlaylistEntity;
+import com.iamvkryt.yomusic.db.entity.PlaylistSongEntity;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -250,13 +254,47 @@ public class MoreFragment extends Fragment {
     private void exportDataToUri(Uri uri) {
         new Thread(() -> {
             try {
-                SharedPreferences yomusicPrefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                String playlistsJson = yomusicPrefs.getString("saved_playlists", "[]");
-                String favoritesJson = yomusicPrefs.getString("saved_favorites", "[]");
+                AppDatabase db = AppDatabase.getInstance(requireContext());
+                List<PlaylistEntity> playlists = db.playlistDao().getAllPlaylists();
+                JSONArray playlistsArray = new JSONArray();
+                for (PlaylistEntity playlist : playlists) {
+                    JSONObject playlistObj = new JSONObject();
+                    playlistObj.put("playlistId", playlist.getPlaylistId());
+                    playlistObj.put("title", playlist.getTitle());
+                    playlistObj.put("thumbnail", playlist.getThumbnail());
+                    playlistObj.put("channel", playlist.getChannel());
+                    playlistObj.put("isCustomPlaylist", playlist.isCustom());
+                    playlistObj.put("nextPage", playlist.getNextPage());
+                    playlistObj.put("total", playlist.getTotal());
+
+                    List<PlaylistSongEntity> songs = db.playlistDao().getSongsForPlaylist(playlist.getPlaylistId());
+                    JSONArray songsArray = new JSONArray();
+                    for (PlaylistSongEntity song : songs) {
+                        JSONObject songObj = new JSONObject();
+                        songObj.put("videoId", song.getVideoId());
+                        songObj.put("title", song.getTitle());
+                        songObj.put("channel", song.getChannel());
+                        songObj.put("duration", song.getDuration());
+                        songsArray.put(songObj);
+                    }
+                    playlistObj.put("videoItems", songsArray);
+                    playlistsArray.put(playlistObj);
+                }
+
+                List<FavoriteEntity> favorites = db.favoriteDao().getAllFavorites();
+                JSONArray favoritesArray = new JSONArray();
+                for (FavoriteEntity fav : favorites) {
+                    JSONObject favObj = new JSONObject();
+                    favObj.put("videoId", fav.getVideoId());
+                    favObj.put("title", fav.getTitle());
+                    favObj.put("channel", fav.getChannel());
+                    favObj.put("duration", fav.getDuration());
+                    favoritesArray.put(favObj);
+                }
 
                 JSONObject backupObj = new JSONObject();
-                backupObj.put("playlists", new JSONArray(playlistsJson));
-                backupObj.put("favourites", new JSONArray(favoritesJson));
+                backupObj.put("playlists", playlistsArray);
+                backupObj.put("favourites", favoritesArray);
 
                 String jsonString = backupObj.toString(4);
 
@@ -315,8 +353,9 @@ public class MoreFragment extends Fragment {
             boolean playlistsValid = false;
             boolean favoritesValid = false;
 
-            List<Playlist> playlistsToSave = new ArrayList<>();
-            List<VideoItem> favoritesToSave = new ArrayList<>();
+            List<PlaylistEntity> playlistsToSave = new ArrayList<>();
+            List<PlaylistSongEntity> allSongsToSave = new ArrayList<>();
+            List<FavoriteEntity> favoritesToSave = new ArrayList<>();
 
             if (playlistsArray != null) {
                 playlistsValid = true;
@@ -334,7 +373,6 @@ public class MoreFragment extends Fragment {
                     boolean isCustom = obj.optBoolean("isCustomPlaylist", obj.optBoolean("isCustomChannel", false));
                     String nextPage = obj.optString("nextPage", "");
 
-                    List<VideoItem> videoItems = new ArrayList<>();
                     JSONArray videosArray = null;
                     // Handle both new and legacy data:
                     Object videoItemsObj = obj.opt("videoItems");
@@ -354,18 +392,22 @@ public class MoreFragment extends Fragment {
                         // legacy data to create total field for new format
                         total = videosArray.length();
                     }
+                    
+                    playlistsToSave.add(new PlaylistEntity(playlistId, title, thumbnail, channel, isCustom, total, nextPage, System.currentTimeMillis()));
+
                     if (videosArray != null) {
                         for (int j = 0; j < videosArray.length(); j++) {
                             JSONObject vObj = videosArray.getJSONObject(j);
-                            videoItems.add(new VideoItem(
+                            allSongsToSave.add(new PlaylistSongEntity(
+                                    playlistId,
                                     vObj.optString("videoId", ""),
                                     vObj.optString("title", ""),
                                     vObj.optString("channel", ""),
-                                    vObj.optInt("duration", 0)
+                                    vObj.optInt("duration", 0),
+                                    j
                             ));
                         }
                     }
-                    playlistsToSave.add(new Playlist(playlistId, title, thumbnail, channel, isCustom, videoItems, nextPage, total));
                 }
             }
 
@@ -381,7 +423,7 @@ public class MoreFragment extends Fragment {
                     }
                     String channel = obj.optString("channel", "");
                     int duration = obj.optInt("duration", 0);
-                    favoritesToSave.add(new VideoItem(videoId, title, channel, duration));
+                    favoritesToSave.add(new FavoriteEntity(videoId, title, channel, duration, System.currentTimeMillis()));
                 }
             }
 
@@ -391,13 +433,20 @@ public class MoreFragment extends Fragment {
             }
 
             // Save valid components
+            AppDatabase db = AppDatabase.getInstance(requireContext());
             if (playlistsValid) {
-                PlaylistStorage playlistStorage = new PlaylistStorage(requireContext());
-                playlistStorage.savePlaylists(playlistsToSave);
+                for (PlaylistEntity p : playlistsToSave) {
+                    List<PlaylistSongEntity> pSongs = new ArrayList<>();
+                    for (PlaylistSongEntity s : allSongsToSave) {
+                        if (s.getPlaylistId().equals(p.getPlaylistId())) {
+                            pSongs.add(s);
+                        }
+                    }
+                    db.playlistDao().insertPlaylistWithSongs(p, pSongs);
+                }
             }
             if (favoritesValid) {
-                FavoriteStorage favoriteStorage = new FavoriteStorage(requireContext());
-                favoriteStorage.saveFavorites(favoritesToSave);
+                db.favoriteDao().insertAll(favoritesToSave);
             }
 
             // Show result dialog
