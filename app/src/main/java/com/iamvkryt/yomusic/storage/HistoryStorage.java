@@ -16,6 +16,7 @@ import java.util.List;
  */
 public class HistoryStorage {
     private static final String TAG = "HistoryStorage";
+    public static final int MAX_HISTORY_SIZE = 20;
     private final HistoryDao historyDao;
 
     public HistoryStorage(Context context) {
@@ -57,6 +58,14 @@ public class HistoryStorage {
                     System.currentTimeMillis()
             );
             historyDao.insert(entity);
+
+            // Keep only max limit of recent history items (default 20)
+            List<HistoryEntity> entities = historyDao.getAllHistory();
+            if (entities.size() > MAX_HISTORY_SIZE) {
+                for (int i = MAX_HISTORY_SIZE; i < entities.size(); i++) {
+                    historyDao.deleteById(entities.get(i).getVideoId());
+                }
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error adding to history: " + e.getMessage());
         }
