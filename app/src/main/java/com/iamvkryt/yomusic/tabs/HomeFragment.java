@@ -24,6 +24,9 @@ import com.iamvkryt.yomusic.api.YtRepository;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.iamvkryt.yomusic.db.AppDatabase;
+import com.iamvkryt.yomusic.db.entity.HistoryEntity;
+
 public class HomeFragment extends Fragment {
 
     private View loadingContainer;
@@ -115,6 +118,57 @@ public class HomeFragment extends Fragment {
             recyclerView.setLayoutParams(params);
 
             sectionsContainer.addView(recyclerView);
+        }
+
+        // Keep listening section from History
+        AppDatabase db = AppDatabase.getInstance(requireContext());
+        List<HistoryEntity> historyList = db.historyDao().getAllHistory();
+        if (!historyList.isEmpty()) {
+            addSectionHeader("Keep listening");
+            List<HistoryEntity> displayHistory = new ArrayList<>();
+            int size = historyList.size();
+            if (size > 10) {
+                displayHistory.addAll(historyList.subList(size - 5, size));
+                displayHistory.addAll(historyList.subList(0, 5));
+            } else if (size > 1) {
+                int half = size / 2;
+                displayHistory.addAll(historyList.subList(size - half, size));
+                displayHistory.addAll(historyList.subList(0, size - half));
+            } else {
+                displayHistory.addAll(historyList);
+            }
+
+            List<Song> historySongs = new ArrayList<>();
+            for (HistoryEntity item : displayHistory) {
+                String thumbnailUrl = "https://img.youtube.com/vi/" + item.getVideoId() + "/hqdefault.jpg";
+                historySongs.add(new Song(item.getVideoId(), item.getTitle(), item.getChannel(), thumbnailUrl));
+            }
+
+            RecyclerView historyRecycler = new RecyclerView(requireContext());
+            historyRecycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+            historyRecycler.setClipToPadding(false);
+
+            SongAdapter historyAdapter = new SongAdapter(historySongs, song -> {
+                if (getActivity() instanceof MainActivity) {
+                    List<com.iamvkryt.yomusic.models.VideoItem> videoQueue = new ArrayList<>();
+                    for (Song s : historySongs) {
+                        videoQueue.add(new com.iamvkryt.yomusic.models.VideoItem(s.getVideoId(), s.getTitle(), s.getArtist(), 0));
+                    }
+                    int clickIndex = historySongs.indexOf(song);
+                    if (clickIndex == -1) clickIndex = 0;
+                    ((MainActivity) getActivity()).playPlaylistQueue(videoQueue, clickIndex);
+                }
+            });
+            historyRecycler.setAdapter(historyAdapter);
+
+            LinearLayout.LayoutParams historyParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            historyParams.setMargins(0, 0, 0, dpToPx(24));
+            historyRecycler.setLayoutParams(historyParams);
+
+            sectionsContainer.addView(historyRecycler);
         }
 
         // Album/Playlist sections
