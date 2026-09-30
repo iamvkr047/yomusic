@@ -131,6 +131,11 @@ public class YtRepository {
     }
 
     public void getPlaylistVideos(String playlistId, OnPlaylistCallback callback) {
+        if (isShortRDPlaylist(playlistId)) {
+            getShortRDPlaylistVideos(playlistId, callback);
+            return;
+        }
+
         executor.execute(() -> {
             try {
                 SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -157,7 +162,45 @@ public class YtRepository {
         });
     }
 
+    public void getShortRDPlaylistVideos(String playlistId, OnPlaylistCallback callback) {
+        if (!isShortRDPlaylist(playlistId)) {
+            Log.w(TAG, "Invalid short RD playlist ID: " + playlistId);
+            mainHandler.post(() -> callback.onError("Invalid Short RD Playlist ID"));
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String country = prefs.getString(KEY_COUNTRY, "IN");
+                String url = PLAYLIST_BASE_URL + playlistId + "&playnext=1";
+
+                YtInitDataExtractor.YtInitResult initResult = extractor.getYoutubeInitData(url, country);
+                if (initResult == null || initResult.initData == null) {
+                    mainHandler.post(() -> callback.onError("Failed to fetch YouTube radio data"));
+                    return;
+                }
+
+                Playlist playlist = RadioPlaylistDataParser.parseRadioPlaylistVideos(initResult.initData, playlistId);
+                if (playlist == null) {
+                    mainHandler.post(() -> callback.onError("Failed to parse YouTube radio playlist"));
+                    return;
+                }
+
+                mainHandler.post(() -> callback.onSuccess(playlist, initResult.context, initResult.apiToken));
+            } catch (Exception e) {
+                Log.e(TAG, "Error in getShortRDPlaylistVideos: " + e.getMessage());
+                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
+            }
+        });
+    }
+
     public void getPlaylistVideosNext(String token, JSONObject clientContext, String apiToken, OnPlaylistNextCallback callback) {
+        if (isShortRDToken(token)) {
+            getNextShortRD(token, clientContext, apiToken, callback);
+            return;
+        }
+
         executor.execute(() -> {
             try {
                 String endpoint = "https://www.youtube.com/youtubei/v1/browse?key=" + apiToken;
@@ -196,6 +239,68 @@ public class YtRepository {
                 mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
             }
         });
+    }
+
+    public void getNextShortRD(String token, JSONObject clientContext, String apiToken, OnPlaylistNextCallback callback) {
+        executor.execute(() -> {
+            try {
+                JSONObject tokenObj = new JSONObject(token);
+                String params = tokenObj.optString("params", "");
+                String playlistId = tokenObj.optString("playlistId", "");
+                int playlistIndex = tokenObj.optInt("playlistIndex", 0);
+                String videoId = tokenObj.optString("videoId", "");
+
+                String endpoint = "https://www.youtube.com/youtubei/v1/get_watch?key=" + apiToken;
+
+                JSONObject watchNextRequest = new JSONObject();
+                watchNextRequest.put("params", params);
+                watchNextRequest.put("playlistId", playlistId);
+                watchNextRequest.put("playlistIndex", playlistIndex);
+                watchNextRequest.put("racyCheckOk", false);
+                watchNextRequest.put("videoId", videoId);
+
+                JSONObject payload = new JSONObject();
+                payload.put("context", clientContext != null ? clientContext : new JSONObject());
+                payload.put("watchNextRequest", watchNextRequest);
+
+                RequestBody body = RequestBody.create(
+                        payload.toString(),
+                        MediaType.parse("application/json; charset=utf-8")
+                );
+
+                Request request = new Request.Builder()
+                        .url(endpoint)
+                        .post(body)
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        mainHandler.post(() -> callback.onError("Next radio page request failed: " + response.code()));
+                        return;
+                    }
+
+                    String jsonStr = response.body().string();
+                    PlaylistDataParser.PlaylistNextResult result = RadioPlaylistDataParser.parseRadioPlaylistNext(jsonStr, token);
+                    if (result == null) {
+                        mainHandler.post(() -> callback.onError("Failed to parse radio continuation items"));
+                        return;
+                    }
+
+                    mainHandler.post(() -> callback.onSuccess(result));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in getNextShortRD: " + e.getMessage());
+                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
+            }
+        });
+    }
+
+    public static boolean isShortRDPlaylist(String playlistId) {
+        return playlistId != null && playlistId.startsWith("RD") && playlistId.length() <= 15;
+    }
+
+    public static boolean isShortRDToken(String token) {
+        return token != null && token.trim().startsWith("{") && token.contains("\"playlistIndex\"");
     }
 
     public void validatePlaylistLink(String searchQuery, OnPlaylistValidateCallback callback) {

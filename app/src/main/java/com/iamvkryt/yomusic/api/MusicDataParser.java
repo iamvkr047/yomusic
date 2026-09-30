@@ -142,7 +142,9 @@ public class MusicDataParser {
                     if ("LOCKUP_CONTENT_TYPE_VIDEO".equals(contentType)) {
                         videos.add(new VideoItem(contentId, itemTitle));
                     } else if ("LOCKUP_CONTENT_TYPE_ALBUM".equals(contentType)
-                            || "LOCKUP_CONTENT_TYPE_PLAYLIST".equals(contentType)) {
+                            || "LOCKUP_CONTENT_TYPE_PLAYLIST".equals(contentType)
+                            || "LOCKUP_CONTENT_TYPE_STATION".equals(contentType)
+                            ) {
                         String thumbnail = getCollectionThumbnail(lock);
                         albums.add(new AlbumItem(contentId, itemTitle, thumbnail));
                     }
