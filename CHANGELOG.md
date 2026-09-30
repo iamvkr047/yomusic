@@ -4,4 +4,5 @@ Fix:
 - Music Homepage fix
 
 Feature:
-- Now Handles Mix Player
+- Now Handles Mix Playlist
+- Shuffled Home Feed

@@ -22,12 +22,15 @@ import com.iamvkryt.yomusic.api.MusicDataParser;
 import com.iamvkryt.yomusic.api.YtRepository;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.iamvkryt.yomusic.db.AppDatabase;
 import com.iamvkryt.yomusic.db.entity.HistoryEntity;
 
 public class HomeFragment extends Fragment {
+
+    private static MusicDataParser.HomeFeedResult cachedHomeFeedResult = null;
 
     private View loadingContainer;
     private View errorContainer;
@@ -57,17 +60,41 @@ public class HomeFragment extends Fragment {
 
         repository = new YtRepository(requireContext());
 
-        btnRetry.setOnClickListener(v -> loadHomeFeed());
-        loadHomeFeed();
+        btnRetry.setOnClickListener(v -> loadHomeFeed(true));
+        loadHomeFeed(false);
     }
 
-    private void loadHomeFeed() {
+    private void loadHomeFeed(boolean forceRefresh) {
+        if (!forceRefresh && cachedHomeFeedResult != null) {
+            displayHomeFeed(cachedHomeFeedResult);
+            return;
+        }
+
         showLoading();
 
         repository.getMusicHomeFeed(new YtRepository.OnHomeFeedCallback() {
             @Override
             public void onSuccess(MusicDataParser.HomeFeedResult result) {
                 if (!isAdded()) return;
+
+                if (result != null) {
+                    if (result.musicSections != null) {
+                        for (MusicDataParser.MusicSection section : result.musicSections) {
+                            if (section.content != null) {
+                                Collections.shuffle(section.content);
+                            }
+                        }
+                    }
+                    if (result.albumSections != null) {
+                        for (MusicDataParser.AlbumSection section : result.albumSections) {
+                            if (section.content != null) {
+                                Collections.shuffle(section.content);
+                            }
+                        }
+                    }
+                }
+
+                cachedHomeFeedResult = result;
                 displayHomeFeed(result);
             }
 
@@ -100,8 +127,8 @@ public class HomeFragment extends Fragment {
             SongAdapter adapter = new SongAdapter(songs, song -> {
                 if (getActivity() instanceof MainActivity) {
                     List<com.iamvkryt.yomusic.models.VideoItem> videoQueue = new ArrayList<>();
-                    for (MusicDataParser.VideoItem item : section.content) {
-                        videoQueue.add(new com.iamvkryt.yomusic.models.VideoItem(item.videoId, item.title, "", 0));
+                    for (Song s : songs) {
+                        videoQueue.add(new com.iamvkryt.yomusic.models.VideoItem(s.getVideoId(), s.getTitle(), s.getArtist(), 0));
                     }
                     int clickIndex = songs.indexOf(song);
                     if (clickIndex == -1) clickIndex = 0;
