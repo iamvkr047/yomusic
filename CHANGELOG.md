@@ -1,8 +1,4 @@
-New: Version 2.5
+New: Version 2.6
 
 Fix:
-- Music Homepage fix
-
-Feature:
-- Now Handles Mix Playlist
-- Shuffled Home Feed
+- Save radio playlist on Playlist tab

@@ -304,6 +304,34 @@ public class YtRepository {
     }
 
     public void validatePlaylistLink(String searchQuery, OnPlaylistValidateCallback callback) {
+        // Extract playlist ID from the URL first to check for radio playlists
+        Uri uri = Uri.parse(searchQuery);
+        String listParam = uri.getQueryParameter("list");
+
+        // Radio playlists (RD*) cannot be validated via oEmbed,
+        // so we extract the ID and directly fetch the playlist data
+        if (listParam != null && listParam.startsWith("RD")) {
+            OnPlaylistCallback wrappedCallback = new OnPlaylistCallback() {
+                @Override
+                public void onSuccess(Playlist playlist, JSONObject context, String apiToken) {
+                    callback.onSuccess(playlist);
+                }
+
+                @Override
+                public void onError(String message) {
+                    callback.onError(message);
+                }
+            };
+
+            if (isShortRDPlaylist(listParam)) {
+                getShortRDPlaylistVideos(listParam, wrappedCallback);
+            } else {
+                getPlaylistVideos(listParam, wrappedCallback);
+            }
+            return;
+        }
+
+        // Standard playlists (PL*) — validate via oEmbed
         executor.execute(() -> {
             try {
                 String encodedUrl = URLEncoder.encode(searchQuery, StandardCharsets.UTF_8.name());
@@ -343,8 +371,8 @@ public class YtRepository {
 
                     if (playlistId == null || playlistId.isEmpty()) {
                         // Fallback check URL parameter directly if user passed playlist link directly
-                        Uri uri = Uri.parse(searchQuery);
-                        playlistId = uri.getQueryParameter("list");
+                        Uri fallbackUri = Uri.parse(searchQuery);
+                        playlistId = fallbackUri.getQueryParameter("list");
                     }
 
                     if (playlistId == null || playlistId.isEmpty()) {

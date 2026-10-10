@@ -1,6 +1,7 @@
 package com.iamvkryt.yomusic.tabs;
 
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -77,7 +78,8 @@ public class PlaylistFragment extends Fragment {
         rvPlaylists.setAdapter(playlistAdapter);
 
         etSearchPlaylist.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
+            if (actionId == EditorInfo.IME_ACTION_DONE || 
+                (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
                 handleAddPlaylist();
                 return true;
             }
