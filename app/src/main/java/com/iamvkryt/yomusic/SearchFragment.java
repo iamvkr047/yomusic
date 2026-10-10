@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
+import com.iamvkryt.yomusic.adapters.RecentSearchAdapter;
 import com.iamvkryt.yomusic.adapters.SearchSuggestionAdapter;
 import com.iamvkryt.yomusic.api.YtRepository;
 
@@ -44,7 +45,7 @@ public class SearchFragment extends Fragment {
     private View tvRecentLabel;
 
     private SearchSuggestionAdapter suggestionAdapter;
-    private SearchSuggestionAdapter recentAdapter;
+    private RecentSearchAdapter recentAdapter;
     private final List<String> suggestions = new ArrayList<>();
     private final List<String> recentSearches = new ArrayList<>();
 
@@ -92,17 +93,16 @@ public class SearchFragment extends Fragment {
         rvSuggestions.setLayoutManager(new LinearLayoutManager(getContext()));
         rvSuggestions.setAdapter(suggestionAdapter);
 
-        // Recent searches adapter - clicking a recent search triggers actual search
-        recentAdapter = new SearchSuggestionAdapter(recentSearches, new SearchSuggestionAdapter.OnSuggestionClickListener() {
+        // Recent searches adapter - clicking triggers search, cross button removes item
+        recentAdapter = new RecentSearchAdapter(recentSearches, new RecentSearchAdapter.OnRecentSearchClickListener() {
             @Override
-            public void onSuggestionClick(String suggestion) {
-                performSearch(suggestion);
+            public void onRecentClick(String query) {
+                performSearch(query);
             }
 
             @Override
-            public void onSuggestionCopyToInput(String suggestion) {
-                etSearchQuery.setText(suggestion);
-                etSearchQuery.setSelection(suggestion.length());
+            public void onRecentRemove(String query) {
+                removeRecentSearch(query);
             }
         });
         rvRecentSearches.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -237,6 +237,17 @@ public class SearchFragment extends Fragment {
         if (imm != null && etSearchQuery != null) {
             imm.hideSoftInputFromWindow(etSearchQuery.getWindowToken(), 0);
         }
+    }
+
+    private void removeRecentSearch(String query) {
+        recentSearches.remove(query);
+        recentAdapter.notifyDataSetChanged();
+        if (recentSearches.isEmpty()) {
+            hideRecent();
+        }
+        JSONArray arr = new JSONArray(recentSearches);
+        requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putString(KEY_RECENT_SEARCHES, arr.toString()).apply();
     }
 
     private void clearRecentSearches() {

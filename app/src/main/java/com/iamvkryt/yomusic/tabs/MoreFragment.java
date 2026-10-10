@@ -224,7 +224,7 @@ public class MoreFragment extends Fragment {
     private void shareApp() {
         Intent sendIntent = new Intent();
         sendIntent.setAction(Intent.ACTION_SEND);
-        sendIntent.putExtra(Intent.EXTRA_TEXT, "Download YoMusic - The premium Youtube Music player app!");
+        sendIntent.putExtra(Intent.EXTRA_TEXT, "Download YoMusic - The Youtube Music player Client for android! - https://yomusic.vercel.app");
         sendIntent.setType("text/plain");
         startActivity(Intent.createChooser(sendIntent, "Share App via"));
     }
