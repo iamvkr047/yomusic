@@ -114,8 +114,10 @@ public class PlayerBottomSheetFragment extends BottomSheetDialogFragment {
             btnAddToPlaylist.setOnClickListener(v -> handleAddToCustomPlaylist(activity));
 
             btnVideoToggle.setOnClickListener(v -> {
-                VideoPlayerBottomSheetFragment videoSheet = new VideoPlayerBottomSheetFragment();
-                videoSheet.show(getParentFragmentManager(), "VideoPlayerBottomSheetFragment");
+                dismiss();
+                if (activity != null) {
+                    activity.showVideoCommentsOverlay();
+                }
             });
 
             btnPlayerFavorite.setOnClickListener(v -> {
