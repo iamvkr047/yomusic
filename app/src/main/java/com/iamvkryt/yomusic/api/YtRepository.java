@@ -75,6 +75,22 @@ public class YtRepository {
         void onError(String message);
     }
 
+    public interface OnCommentsCallback {
+        void onSuccess(CommentsParser.CommentsResult commentsResult, String total, JSONObject context, String apiToken);
+        void onError(String message);
+    }
+
+    public interface OnCommentsNextCallback {
+        void onSuccess(CommentsParser.CommentsResult commentsResult);
+        void onError(String message);
+    }
+
+    public interface OnCommentsSubThreadsCallback {
+        void onSuccess(CommentsParser.CommentsResult commentsResult);
+        void onError(String message);
+    }
+
+
     public YtRepository(Context context) {
         this.context = context.getApplicationContext();
         this.extractor = new YtInitDataExtractor();
@@ -468,6 +484,155 @@ public class YtRepository {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error in getSearchNext: " + e.getMessage());
+                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
+            }
+        });
+    }
+
+    public void getVideoComments(String videoId, OnCommentsCallback callback) {
+        getVideoComments(videoId, "top", callback);
+    }
+
+    public void getVideoComments(String videoId, String sort, OnCommentsCallback callback) {
+        executor.execute(() -> {
+            try {
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String country = prefs.getString(KEY_COUNTRY, "IN");
+                String videoUrl = "https://www.youtube.com/watch?v=" + videoId;
+
+                // 1. Fetch video page init data
+                YtInitDataExtractor.YtInitResult initResult = extractor.getYoutubeInitData(videoUrl, country);
+                if (initResult == null || initResult.initData == null) {
+                    mainHandler.post(() -> callback.onError("Failed to fetch YouTube video data"));
+                    return;
+                }
+
+                // 2. Parse comments continuation token and total count from init data
+                CommentsParser.CommentsTokenResult tokenResult = CommentsParser.parseCommentsToken(initResult.initData, sort);
+                if (tokenResult == null || tokenResult.token == null || tokenResult.token.isEmpty()) {
+                    mainHandler.post(() -> callback.onError("Cannot parse comments token (comments may be disabled)"));
+                    return;
+                }
+
+                // 3. Request initial comments using continuation token
+                String endpoint = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false&alt=json&key=" + initResult.apiToken;
+                JSONObject payload = new JSONObject();
+                payload.put("context", initResult.context != null ? initResult.context : new JSONObject());
+                payload.put("continuation", tokenResult.token);
+
+                RequestBody body = RequestBody.create(
+                        payload.toString(),
+                        MediaType.parse("application/json; charset=utf-8")
+                );
+
+                Request request = new Request.Builder()
+                        .url(endpoint)
+                        .header("Accept", "*/*")
+                        .post(body)
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        mainHandler.post(() -> callback.onError("Comments request failed: " + response.code()));
+                        return;
+                    }
+
+                    String jsonStr = response.body().string();
+                    JSONObject json = new JSONObject(jsonStr);
+                    CommentsParser.CommentsResult commentsResult = CommentsParser.parseComments(json);
+                    if (commentsResult == null) {
+                        mainHandler.post(() -> callback.onError("Cannot parse comment list"));
+                        return;
+                    }
+
+                    mainHandler.post(() -> callback.onSuccess(commentsResult, tokenResult.total, initResult.context, initResult.apiToken));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in getVideoComments: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
+            }
+        });
+    }
+
+    public void getVideoCommentsNext(String token, JSONObject clientContext, String apiToken, OnCommentsNextCallback callback) {
+        executor.execute(() -> {
+            try {
+                String endpoint = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false&alt=json&key=" + apiToken;
+                JSONObject payload = new JSONObject();
+                payload.put("context", clientContext != null ? clientContext : new JSONObject());
+                payload.put("continuation", token);
+
+                RequestBody body = RequestBody.create(
+                        payload.toString(),
+                        MediaType.parse("application/json; charset=utf-8")
+                );
+
+                Request request = new Request.Builder()
+                        .url(endpoint)
+                        .header("Accept", "*/*")
+                        .post(body)
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        mainHandler.post(() -> callback.onError("Next comments request failed: " + response.code()));
+                        return;
+                    }
+
+                    String jsonStr = response.body().string();
+                    JSONObject json = new JSONObject(jsonStr);
+                    CommentsParser.CommentsResult commentsResult = CommentsParser.parseCommentsNext(json);
+                    if (commentsResult == null) {
+                        mainHandler.post(() -> callback.onError("Cannot parse next comment list"));
+                        return;
+                    }
+
+                    mainHandler.post(() -> callback.onSuccess(commentsResult));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in getVideoCommentsNext: " + e.getMessage(), e);
+                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
+            }
+        });
+    }
+
+    public void getVideoCommentsSubThreads(String token, JSONObject clientContext, String apiToken, OnCommentsSubThreadsCallback callback) {
+        executor.execute(() -> {
+            try {
+                String endpoint = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false&alt=json&key=" + apiToken;
+                JSONObject payload = new JSONObject();
+                payload.put("context", clientContext != null ? clientContext : new JSONObject());
+                payload.put("continuation", token);
+
+                RequestBody body = RequestBody.create(
+                        payload.toString(),
+                        MediaType.parse("application/json; charset=utf-8")
+                );
+
+                Request request = new Request.Builder()
+                        .url(endpoint)
+                        .header("Accept", "*/*")
+                        .post(body)
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        mainHandler.post(() -> callback.onError("Subthreads request failed: " + response.code()));
+                        return;
+                    }
+
+                    String jsonStr = response.body().string();
+                    JSONObject json = new JSONObject(jsonStr);
+                    CommentsParser.CommentsResult commentsResult = CommentsParser.parseSubthreads(json);
+                    if (commentsResult == null) {
+                        mainHandler.post(() -> callback.onError("Cannot parse subthreads list"));
+                        return;
+                    }
+
+                    mainHandler.post(() -> callback.onSuccess(commentsResult));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in getVideoCommentsSubThreads: " + e.getMessage(), e);
                 mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
             }
         });

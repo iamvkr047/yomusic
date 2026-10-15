@@ -117,16 +117,16 @@ public class VideoCommentsHelper {
 
     public List<Comment> getDummyComments() {
         List<Comment> comments = new ArrayList<>();
-        comments.add(new Comment("Alex Rivera", "This track hits differently late at night 🔥", 1240, "2 hours ago"));
-        comments.add(new Comment("Elena Rostova", "The production quality on this is insane. Bass is so clean!", 843, "5 hours ago"));
-        comments.add(new Comment("Marcus Chen", "Been on repeat all week! Never gets old.", 320, "1 day ago"));
-        comments.add(new Comment("Sarah Jenkins", "That transition at 1:45 gave me chills 🙌", 512, "2 days ago"));
-        comments.add(new Comment("David Kim", "Can't believe this only has so few views, underrated masterpiece.", 189, "3 days ago"));
-        comments.add(new Comment("Chloe Bennett", "Listening to this while coding, perfect focus vibe.", 94, "4 days ago"));
-        comments.add(new Comment("Zack Taylor", "Best release of this year by far. 10/10!", 415, "1 week ago"));
-        comments.add(new Comment("Maya Patel", "The vocals and melodies blend so smoothly together ❤️", 267, "1 week ago"));
-        comments.add(new Comment("Liam Wilson", "Found this gem randomly and now I'm hooked.", 78, "2 weeks ago"));
-        comments.add(new Comment("Sophia Martinez", "Need a 10 hour version of this immediately please!", 621, "2 weeks ago"));
+        comments.add(new Comment("dummy_1", "Alex Rivera", "This track hits differently late at night 🔥", "2 hours ago", "", "UC_alex_rivera", "1.2K", "14", "token_subthread_1"));
+        comments.add(new Comment("dummy_2", "Elena Rostova", "The production quality on this is insane. Bass is so clean!", "5 hours ago", "", "UC_elena_rostova", "843", "8", "token_subthread_2"));
+        comments.add(new Comment("dummy_3", "Marcus Chen", "Been on repeat all week! Never gets old.", "1 day ago", "", "UC_marcus_chen", "320", "3", ""));
+        comments.add(new Comment("dummy_4", "Sarah Jenkins", "That transition at 1:45 gave me chills 🙌", "2 days ago", "", "UC_sarah_jenkins", "512", "6", "token_subthread_4"));
+        comments.add(new Comment("dummy_5", "David Kim", "Can't believe this only has so few views, underrated masterpiece.", "3 days ago", "", "UC_david_kim", "189", "2", ""));
+        comments.add(new Comment("dummy_6", "Chloe Bennett", "Listening to this while coding, perfect focus vibe.", "4 days ago", "", "UC_chloe_bennett", "94", "1", ""));
+        comments.add(new Comment("dummy_7", "Zack Taylor", "Best release of this year by far. 10/10!", "1 week ago", "", "UC_zack_taylor", "415", "5", "token_subthread_7"));
+        comments.add(new Comment("dummy_8", "Maya Patel", "The vocals and melodies blend so smoothly together ❤️", "1 week ago", "", "UC_maya_patel", "267", "4", ""));
+        comments.add(new Comment("dummy_9", "Liam Wilson", "Found this gem randomly and now I'm hooked.", "2 weeks ago", "", "UC_liam_wilson", "78", "0", ""));
+        comments.add(new Comment("dummy_10", "Sophia Martinez", "Need a 10 hour version of this immediately please!", "2 weeks ago", "", "UC_sophia_martinez", "621", "9", "token_subthread_10"));
         return comments;
     }
 }
