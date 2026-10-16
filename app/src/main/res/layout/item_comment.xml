@@ -10,7 +10,7 @@
     android:paddingTop="12dp"
     android:paddingBottom="12dp">
 
-    <!-- Circular Avatar Placeholder -->
+    <!-- Circular Avatar Container -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_avatar"
         android:layout_width="36dp"
@@ -20,15 +20,31 @@
         app:strokeWidth="0dp"
         app:cardBackgroundColor="?attr/colorPrimaryContainer">
 
-        <TextView
-            android:id="@+id/tv_comment_avatar"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="A"
-            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
-            android:textColor="?attr/colorOnPrimaryContainer"
-            android:textStyle="bold" />
+            android:layout_height="match_parent">
+
+            <!-- Fallback text initial -->
+            <TextView
+                android:id="@+id/tv_comment_avatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="A"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                android:textStyle="bold" />
+
+            <!-- Network avatar loaded via Glide -->
+            <ImageView
+                android:id="@+id/iv_comment_avatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="User Avatar"
+                android:visibility="gone" />
+
+        </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Comment Content -->
@@ -75,9 +91,9 @@
             android:textColor="?attr/colorOnSurface"
             tools:text="This is a comment text that can span multiple lines to demonstrate how comments look in the list." />
 
-        <!-- Like count and icon -->
+        <!-- Bottom Action Row: Likes on left, Replies on right -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:gravity="center_vertical"
@@ -99,6 +115,34 @@
                 android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="42" />
+
+            <!-- Spacer -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Replies Button -->
+            <TextView
+                android:id="@+id/btn_comment_replies"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:drawableStart="@drawable/ic_reply"
+                android:drawablePadding="4dp"
+                android:drawableTint="?attr/colorPrimary"
+                android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="10 Replies"
+                tools:visibility="visible" />
+
         </LinearLayout>
 
     </LinearLayout>

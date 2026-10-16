@@ -521,7 +521,14 @@ public class CommentsParser {
             String authorName = author != null ? author.optString("displayName", "") : "";
             String avatar = author != null ? author.optString("avatarThumbnailUrl", "") : "";
             String channelId = author != null ? author.optString("channelId", "") : "";
-            String likesCount = toolbar != null ? toolbar.optString("likeCountLiked", "") : "";
+            String likesCount = "";
+            if (toolbar != null) {
+                if (toolbar.has("likeCountNotliked") && !toolbar.optString("likeCountNotliked", "").isEmpty()) {
+                    likesCount = toolbar.optString("likeCountNotliked", "");
+                } else {
+                    likesCount = toolbar.optString("likeCountLiked", "");
+                }
+            }
             String replyCount = toolbar != null ? toolbar.optString("replyCount", isSubThread ? "0" : "") : "";
             String subThreadToken = (!isSubThread && cMap != null && cMap.containsKey(commentId)) ? cMap.get(commentId) : "";
 

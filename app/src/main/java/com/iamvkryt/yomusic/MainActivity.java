@@ -222,6 +222,9 @@ public class MainActivity extends AppCompatActivity {
                 if (appNavigator != null) {
                     appNavigator.updatePlayerSheetTrackInfo(title, author, getCurrentThumbnailUrl());
                 }
+                if (videoCommentsHelper != null) {
+                    videoCommentsHelper.updateVideoInfo(title, author, videoId);
+                }
                 showMediaNotification();
             }
 
@@ -234,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void showVideoCommentsOverlay() {
         if (videoCommentsHelper != null) {
+            videoCommentsHelper.updateVideoInfo(getCurrentTitle(), getCurrentArtist(), getCurrentVideoId());
             videoCommentsHelper.showVideoCommentsOverlay();
         }
     }
@@ -312,6 +316,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (appNavigator != null) {
             appNavigator.updatePlayerSheetTrackInfo(getCurrentTitle(), getCurrentArtist(), getCurrentThumbnailUrl());
+        }
+        if (videoCommentsHelper != null) {
+            videoCommentsHelper.updateVideoInfo(song.getTitle(), song.getArtist(), song.getVideoId());
         }
         showMediaNotification();
     }

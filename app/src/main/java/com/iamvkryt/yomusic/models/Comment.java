@@ -34,12 +34,6 @@ public class Comment {
         this.subThreadToken = subThreadToken != null ? subThreadToken : "";
     }
 
-    /**
-     * Convenience constructor with legacy parameters.
-     */
-    public Comment(String author, String text, int likeCount, String publishedTime) {
-        this("", author, text, publishedTime, "", "", String.valueOf(likeCount), "0", "");
-    }
 
     public static int parseLikes(String likesStr) {
         if (likesStr == null || likesStr.trim().isEmpty()) return 0;

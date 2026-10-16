@@ -1,60 +1,287 @@
 package com.iamvkryt.yomusic.helpers;
 
+import android.content.res.ColorStateList;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.color.MaterialColors;
+import com.iamvkryt.yomusic.MainActivity;
 import com.iamvkryt.yomusic.R;
 import com.iamvkryt.yomusic.adapters.CommentAdapter;
+import com.iamvkryt.yomusic.api.CommentsParser;
+import com.iamvkryt.yomusic.api.YtRepository;
 import com.iamvkryt.yomusic.models.Comment;
 
-import java.util.ArrayList;
+import org.json.JSONObject;
+
 import java.util.List;
 
 public class VideoCommentsHelper {
 
     private final AppCompatActivity activity;
+    private final YtRepository ytRepository;
+
     private LinearLayout webviewContainer;
-    private View commentsHeader;
+    private View layoutVideoInfo;
+    private TextView tvOverlayVideoTitle;
+    private TextView tvOverlayVideoArtist;
+    private ImageButton btnToggleComments;
+    private View viewCommentsDivider;
+
+    private LinearLayout layoutCommentsContainer;
+    private TextView tvCommentsCount;
     private RecyclerView commentsRecyclerView;
+    private View pbCommentsLoader;
+    private TextView tvCommentsMessage;
+
     private CommentAdapter commentAdapter;
-    private ImageButton btnCloseVideoOverlay;
-    private boolean isVideoCommentsVisible = false;
+
+    private boolean isOverlayVisible = false;
+    private boolean isCommentsExpanded = false;
+
+    private String currentVideoId = "";
+    private String loadedCommentsVideoId = null;
+    private String nextPageToken = null;
+    private JSONObject clientContext = null;
+    private String apiToken = null;
+
+    private boolean isLoadingComments = false;
+    private boolean isLoadingMore = false;
 
     public VideoCommentsHelper(AppCompatActivity activity) {
         this.activity = activity;
+        this.ytRepository = new YtRepository(activity);
         initViews();
     }
 
     private void initViews() {
         webviewContainer = activity.findViewById(R.id.webview_container);
-        commentsHeader = activity.findViewById(R.id.layout_comments_header);
+        layoutVideoInfo = activity.findViewById(R.id.layout_video_info);
+        tvOverlayVideoTitle = activity.findViewById(R.id.tv_overlay_video_title);
+        tvOverlayVideoArtist = activity.findViewById(R.id.tv_overlay_video_artist);
+        btnToggleComments = activity.findViewById(R.id.btn_toggle_comments);
+        viewCommentsDivider = activity.findViewById(R.id.view_comments_divider);
+
+        layoutCommentsContainer = activity.findViewById(R.id.layout_comments_container);
+        tvCommentsCount = activity.findViewById(R.id.tv_comments_count);
         commentsRecyclerView = activity.findViewById(R.id.comments_recycler_view);
-        btnCloseVideoOverlay = activity.findViewById(R.id.btn_close_video_overlay);
+        pbCommentsLoader = activity.findViewById(R.id.pb_comments_loader);
+        tvCommentsMessage = activity.findViewById(R.id.tv_comments_message);
 
         commentAdapter = new CommentAdapter();
+        commentAdapter.setListener(new CommentAdapter.OnCommentInteractionListener() {
+            @Override
+            public void onReplyClick(Comment comment) {
+                String replies = comment.getReplyCount();
+                Toast.makeText(activity, "Subthread replies (" + replies + ") will be available in the next phase", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onLoadMoreClick() {
+                loadMoreComments();
+            }
+        });
+
         if (commentsRecyclerView != null) {
             commentsRecyclerView.setLayoutManager(new LinearLayoutManager(activity));
             commentsRecyclerView.setAdapter(commentAdapter);
-            commentsRecyclerView.setVisibility(View.INVISIBLE);
         }
 
-        // Keep comments list and header invisible while overlay is behind main UI
-        if (commentsHeader != null) {
-            commentsHeader.setVisibility(View.INVISIBLE);
+        if (btnToggleComments != null) {
+            btnToggleComments.setOnClickListener(v -> toggleComments());
         }
 
-        if (btnCloseVideoOverlay != null) {
-            btnCloseVideoOverlay.setOnClickListener(v -> hideVideoCommentsOverlay());
+        // Hide overlay subcomponents initially while overlay is behind main UI
+        if (layoutVideoInfo != null) {
+            layoutVideoInfo.setVisibility(View.INVISIBLE);
+        }
+        if (viewCommentsDivider != null) {
+            viewCommentsDivider.setVisibility(View.INVISIBLE);
+        }
+        if (layoutCommentsContainer != null) {
+            layoutCommentsContainer.setVisibility(View.GONE);
         }
     }
 
+    public void updateVideoInfo(String title, String artist, String videoId) {
+        if (tvOverlayVideoTitle != null && title != null && !title.isEmpty()) {
+            tvOverlayVideoTitle.setText(title);
+        }
+        if (tvOverlayVideoArtist != null && artist != null && !artist.isEmpty()) {
+            tvOverlayVideoArtist.setText(artist);
+        }
+
+        if (videoId != null && !videoId.isEmpty() && !videoId.equals(currentVideoId)) {
+            currentVideoId = videoId;
+            resetCommentsState();
+        }
+    }
+
+    private void resetCommentsState() {
+        loadedCommentsVideoId = null;
+        nextPageToken = null;
+        clientContext = null;
+        apiToken = null;
+        isLoadingComments = false;
+        isLoadingMore = false;
+
+        if (commentAdapter != null) {
+            commentAdapter.clear();
+        }
+        if (tvCommentsCount != null) {
+            tvCommentsCount.setText("Comments");
+        }
+        if (pbCommentsLoader != null) {
+            pbCommentsLoader.setVisibility(View.GONE);
+        }
+        if (tvCommentsMessage != null) {
+            tvCommentsMessage.setVisibility(View.GONE);
+        }
+
+        // Collapse comments by default on video change
+        setCommentsExpanded(false);
+    }
+
+    public void toggleComments() {
+        setCommentsExpanded(!isCommentsExpanded);
+        if (isCommentsExpanded) {
+            if (loadedCommentsVideoId == null || !loadedCommentsVideoId.equals(currentVideoId)) {
+                loadComments(currentVideoId);
+            }
+        }
+    }
+
+    private void setCommentsExpanded(boolean expanded) {
+        isCommentsExpanded = expanded;
+        if (layoutCommentsContainer != null) {
+            layoutCommentsContainer.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        }
+
+        if (btnToggleComments != null) {
+            int activeColor = MaterialColors.getColor(btnToggleComments, androidx.appcompat.R.attr.colorPrimary);
+            int inactiveColor = MaterialColors.getColor(btnToggleComments, com.google.android.material.R.attr.colorOnSurface);
+            btnToggleComments.setImageTintList(ColorStateList.valueOf(expanded ? activeColor : inactiveColor));
+        }
+    }
+
+    private void loadComments(String videoId) {
+        if (videoId == null || videoId.trim().isEmpty()) {
+            if (activity instanceof MainActivity) {
+                videoId = ((MainActivity) activity).getCurrentVideoId();
+            }
+        }
+
+        if (videoId == null || videoId.trim().isEmpty()) {
+            if (tvCommentsMessage != null) {
+                tvCommentsMessage.setText("No video selected");
+                tvCommentsMessage.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
+
+        currentVideoId = videoId;
+        isLoadingComments = true;
+        if (pbCommentsLoader != null) pbCommentsLoader.setVisibility(View.VISIBLE);
+        if (tvCommentsMessage != null) tvCommentsMessage.setVisibility(View.GONE);
+        if (commentAdapter != null) commentAdapter.clear();
+
+        ytRepository.getVideoComments(videoId, new YtRepository.OnCommentsCallback() {
+            @Override
+            public void onSuccess(CommentsParser.CommentsResult commentsResult, String total, JSONObject context, String apiTokenVal) {
+                isLoadingComments = false;
+                if (pbCommentsLoader != null) pbCommentsLoader.setVisibility(View.GONE);
+
+                loadedCommentsVideoId = currentVideoId;
+                clientContext = context;
+                apiToken = apiTokenVal;
+
+                if (commentsResult != null) {
+                    nextPageToken = commentsResult.nextPageToken;
+                    List<Comment> list = commentsResult.toComments();
+
+                    if (tvCommentsCount != null) {
+                        if (total != null && !total.trim().isEmpty()) {
+                            tvCommentsCount.setText("Comments • " + total.trim());
+                        } else {
+                            tvCommentsCount.setText("Comments (" + list.size() + ")");
+                        }
+                    }
+
+                    if (list.isEmpty()) {
+                        if (tvCommentsMessage != null) {
+                            tvCommentsMessage.setText("No comments yet");
+                            tvCommentsMessage.setVisibility(View.VISIBLE);
+                        }
+                    } else {
+                        if (tvCommentsMessage != null) tvCommentsMessage.setVisibility(View.GONE);
+                    }
+
+                    boolean hasMore = nextPageToken != null && !nextPageToken.trim().isEmpty();
+                    if (commentAdapter != null) {
+                        commentAdapter.setComments(list, hasMore);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoadingComments = false;
+                if (pbCommentsLoader != null) pbCommentsLoader.setVisibility(View.GONE);
+                if (tvCommentsMessage != null) {
+                    tvCommentsMessage.setText(message != null ? message : "Failed to load comments");
+                    tvCommentsMessage.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+    }
+
+    private void loadMoreComments() {
+        if (nextPageToken == null || nextPageToken.trim().isEmpty() || isLoadingMore) {
+            return;
+        }
+
+        isLoadingMore = true;
+        if (commentAdapter != null) {
+            commentAdapter.setLoadingMore(true);
+        }
+
+        ytRepository.getVideoCommentsNext(nextPageToken, clientContext, apiToken, new YtRepository.OnCommentsNextCallback() {
+            @Override
+            public void onSuccess(CommentsParser.CommentsResult commentsResult) {
+                isLoadingMore = false;
+                if (commentsResult != null) {
+                    nextPageToken = commentsResult.nextPageToken;
+                    boolean hasMore = nextPageToken != null && !nextPageToken.trim().isEmpty();
+                    if (commentAdapter != null) {
+                        commentAdapter.appendComments(commentsResult.toComments(), hasMore);
+                    }
+                } else {
+                    if (commentAdapter != null) {
+                        commentAdapter.setLoadingMore(false);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoadingMore = false;
+                if (commentAdapter != null) {
+                    commentAdapter.setLoadingMore(false);
+                }
+                Toast.makeText(activity, "Failed to load more comments: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     public void showVideoCommentsOverlay() {
-        if (isVideoCommentsVisible) return;
+        if (isOverlayVisible) return;
 
         if (webviewContainer != null) {
             webviewContainer.bringToFront();
@@ -63,36 +290,45 @@ public class VideoCommentsHelper {
             webviewContainer.requestLayout();
         }
 
-        if (commentsHeader != null) {
-            commentsHeader.setVisibility(View.VISIBLE);
+        if (layoutVideoInfo != null) {
+            layoutVideoInfo.setVisibility(View.VISIBLE);
         }
-        if (commentsRecyclerView != null) {
-            commentsRecyclerView.setVisibility(View.VISIBLE);
-        }
-
-        if (commentAdapter != null) {
-            commentAdapter.setComments(getDummyComments());
+        if (viewCommentsDivider != null) {
+            viewCommentsDivider.setVisibility(View.VISIBLE);
         }
 
-        isVideoCommentsVisible = true;
+        // Keep comments collapsed by default
+        if (layoutCommentsContainer != null) {
+            layoutCommentsContainer.setVisibility(isCommentsExpanded ? View.VISIBLE : View.GONE);
+        }
+
+        // Sync metadata from activity if available
+        if (activity instanceof MainActivity) {
+            MainActivity main = (MainActivity) activity;
+            updateVideoInfo(main.getCurrentTitle(), main.getCurrentArtist(), main.getCurrentVideoId());
+        }
+
+        isOverlayVisible = true;
     }
 
     public void hideVideoCommentsOverlay() {
-        if (!isVideoCommentsVisible) return;
+        if (!isOverlayVisible) return;
 
         if (webviewContainer != null) {
             webviewContainer.setTranslationZ(0f);
         }
 
-        // Hide comments list and header so they don't bleed through margins/shadows around floating views
-        if (commentsHeader != null) {
-            commentsHeader.setVisibility(View.INVISIBLE);
+        if (layoutVideoInfo != null) {
+            layoutVideoInfo.setVisibility(View.INVISIBLE);
         }
-        if (commentsRecyclerView != null) {
-            commentsRecyclerView.setVisibility(View.INVISIBLE);
+        if (viewCommentsDivider != null) {
+            viewCommentsDivider.setVisibility(View.INVISIBLE);
+        }
+        if (layoutCommentsContainer != null) {
+            layoutCommentsContainer.setVisibility(View.GONE);
         }
 
-        // Bring all other views to front (restores original draw order)
+        // Bring other UI layers back to front to restore original draw order
         View appBar = activity.findViewById(R.id.appBarLayout);
         if (appBar != null) appBar.bringToFront();
 
@@ -108,25 +344,11 @@ public class VideoCommentsHelper {
         if (webviewContainer != null) {
             webviewContainer.requestLayout();
         }
-        isVideoCommentsVisible = false;
+
+        isOverlayVisible = false;
     }
 
     public boolean isVideoCommentsVisible() {
-        return isVideoCommentsVisible;
-    }
-
-    public List<Comment> getDummyComments() {
-        List<Comment> comments = new ArrayList<>();
-        comments.add(new Comment("dummy_1", "Alex Rivera", "This track hits differently late at night 🔥", "2 hours ago", "", "UC_alex_rivera", "1.2K", "14", "token_subthread_1"));
-        comments.add(new Comment("dummy_2", "Elena Rostova", "The production quality on this is insane. Bass is so clean!", "5 hours ago", "", "UC_elena_rostova", "843", "8", "token_subthread_2"));
-        comments.add(new Comment("dummy_3", "Marcus Chen", "Been on repeat all week! Never gets old.", "1 day ago", "", "UC_marcus_chen", "320", "3", ""));
-        comments.add(new Comment("dummy_4", "Sarah Jenkins", "That transition at 1:45 gave me chills 🙌", "2 days ago", "", "UC_sarah_jenkins", "512", "6", "token_subthread_4"));
-        comments.add(new Comment("dummy_5", "David Kim", "Can't believe this only has so few views, underrated masterpiece.", "3 days ago", "", "UC_david_kim", "189", "2", ""));
-        comments.add(new Comment("dummy_6", "Chloe Bennett", "Listening to this while coding, perfect focus vibe.", "4 days ago", "", "UC_chloe_bennett", "94", "1", ""));
-        comments.add(new Comment("dummy_7", "Zack Taylor", "Best release of this year by far. 10/10!", "1 week ago", "", "UC_zack_taylor", "415", "5", "token_subthread_7"));
-        comments.add(new Comment("dummy_8", "Maya Patel", "The vocals and melodies blend so smoothly together ❤️", "1 week ago", "", "UC_maya_patel", "267", "4", ""));
-        comments.add(new Comment("dummy_9", "Liam Wilson", "Found this gem randomly and now I'm hooked.", "2 weeks ago", "", "UC_liam_wilson", "78", "0", ""));
-        comments.add(new Comment("dummy_10", "Sophia Martinez", "Need a 10 hour version of this immediately please!", "2 weeks ago", "", "UC_sophia_martinez", "621", "9", "token_subthread_10"));
-        return comments;
+        return isOverlayVisible;
     }
 }
