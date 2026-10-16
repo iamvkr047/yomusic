@@ -13,16 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Comments parser translated from REFRENCE_JS-TS_CODE/parsers/commentsParser.ts.
  * Parses initial comments token, top-level comments list, continuation (next page) comments,
  * and comment subthreads (replies).
+ * Comments parser directly translated from parsers/commentsParser.ts.
  */
 public class CommentsParser {
     private static final String TAG = "CommentsParser";
 
-    /**
-     * Equivalent to CommentsType in commentsParser.ts.
-     */
     public static class CommentItem {
         public final String commentId;
         public final String content;
@@ -48,9 +45,6 @@ public class CommentsParser {
             this.subThreadToken = subThreadToken != null ? subThreadToken : "";
         }
 
-        /**
-         * Helper to convert CommentItem to the app's Comment model.
-         */
         public Comment toComment() {
             return new Comment(
                     commentId,
@@ -64,30 +58,8 @@ public class CommentsParser {
                     subThreadToken
             );
         }
-
-        private static int parseLikes(String likesStr) {
-            if (likesStr == null || likesStr.trim().isEmpty()) return 0;
-            String cleaned = likesStr.trim().toUpperCase();
-            try {
-                if (cleaned.endsWith("K")) {
-                    double val = Double.parseDouble(cleaned.substring(0, cleaned.length() - 1));
-                    return (int) (val * 1000);
-                } else if (cleaned.endsWith("M")) {
-                    double val = Double.parseDouble(cleaned.substring(0, cleaned.length() - 1));
-                    return (int) (val * 1000000);
-                } else {
-                    String digitsOnly = cleaned.replaceAll("[^0-9]", "");
-                    return digitsOnly.isEmpty() ? 0 : Integer.parseInt(digitsOnly);
-                }
-            } catch (Exception e) {
-                return 0;
-            }
-        }
     }
 
-    /**
-     * Result returned by parseCommentsToken.
-     */
     public static class CommentsTokenResult {
         public final String token;
         public final String total;
@@ -98,9 +70,6 @@ public class CommentsParser {
         }
     }
 
-    /**
-     * Result returned by parseComments, parseCommentsNext, and parseSubthreads.
-     */
     public static class CommentsResult {
         public final List<CommentItem> commentsDataList;
         public final String nextPageToken;
@@ -119,12 +88,7 @@ public class CommentsParser {
         }
     }
 
-    /**
-     * Parses the comments continuation token and total count from video page ytInitialData.
-     *
-     * @param initData JSONObject representing ytInitialData
-     * @return CommentsTokenResult or null if not found
-     */
+
     public static CommentsTokenResult parseCommentsToken(JSONObject initData) {
         return parseCommentsToken(initData, "top");
     }
@@ -135,82 +99,83 @@ public class CommentsParser {
      * @param initData JSONObject representing ytInitialData
      * @param sort     "top" or "newest" (defaults to "top")
      * @return CommentsTokenResult or null if not found
+     * Translated directly from parseCommentsToken in commentsParser.ts.
      */
     public static CommentsTokenResult parseCommentsToken(JSONObject initData, String sort) {
         if (initData == null) return null;
         try {
             JSONArray engagementPanels = initData.optJSONArray("engagementPanels");
             if (engagementPanels == null) {
-                Log.w(TAG, "No engagementPanels found in initData");
                 return null;
             }
 
-            JSONObject targetHeader = null;
+            JSONObject targetPanel = null;
             for (int i = 0; i < engagementPanels.length(); i++) {
                 JSONObject pl = engagementPanels.optJSONObject(i);
                 if (pl == null) continue;
-                JSONObject panelList = pl.optJSONObject("engagementPanelSectionListRenderer");
-                if (panelList == null) continue;
+                JSONObject renderer = pl.optJSONObject("engagementPanelSectionListRenderer");
+                if (renderer == null) continue;
 
-                String tid = panelList.optString("targetId", "");
+                String tid = renderer.optString("targetId", "");
                 if (tid.contains("comment")) {
-                    JSONObject header = panelList.optJSONObject("header");
+                    JSONObject header = renderer.optJSONObject("header");
                     if (header != null) {
-                        targetHeader = header.optJSONObject("engagementPanelTitleHeaderRenderer");
-                        if (targetHeader != null) {
+                        targetPanel = header.optJSONObject("engagementPanelTitleHeaderRenderer");
+                        if (targetPanel != null) {
                             break;
                         }
                     }
                 }
             }
 
-            if (targetHeader == null) {
-                Log.w(TAG, "Comments engagement panel header not found");
+            if (targetPanel == null) {
                 return null;
             }
 
-            // Extract total comments count string
             String totalText = "";
-            JSONObject contextualInfo = targetHeader.optJSONObject("contextualInfo");
+            JSONObject contextualInfo = targetPanel.optJSONObject("contextualInfo");
             if (contextualInfo != null) {
                 JSONArray runs = contextualInfo.optJSONArray("runs");
                 if (runs != null && runs.length() > 0) {
-                    JSONObject firstRun = runs.optJSONObject(0);
-                    if (firstRun != null) {
-                        totalText = firstRun.optString("text", "");
+                    JSONObject first = runs.optJSONObject(0);
+                    if (first != null) {
+                        totalText = first.optString("text", "");
                     }
                 }
             }
 
-            // Extract sort continuation tokens (top vs newest)
             String topToken = "";
             String newestToken = "";
-
-            JSONObject menu = targetHeader.optJSONObject("menu");
+            JSONObject menu = targetPanel.optJSONObject("menu");
             if (menu != null) {
-                JSONObject sortMenu = menu.optJSONObject("sortFilterSubMenuRenderer");
-                if (sortMenu != null) {
-                    JSONArray subMenuItems = sortMenu.optJSONArray("subMenuItems");
-                    if (subMenuItems != null) {
-                        if (subMenuItems.length() > 0) {
-                            topToken = extractSubMenuItemToken(subMenuItems.optJSONObject(0));
+                JSONObject sortSubMenu = menu.optJSONObject("sortFilterSubMenuRenderer");
+                if (sortSubMenu != null) {
+                    JSONArray items = sortSubMenu.optJSONArray("subMenuItems");
+                    if (items != null) {
+                        if (items.length() > 0) {
+                            JSONObject item0 = items.optJSONObject(0);
+                            if (item0 != null && item0.has("serviceEndpoint")) {
+                                JSONObject cmd = item0.optJSONObject("serviceEndpoint").optJSONObject("continuationCommand");
+                                if (cmd != null) topToken = cmd.optString("token", "");
+                            }
                         }
-                        if (subMenuItems.length() > 1) {
-                            newestToken = extractSubMenuItemToken(subMenuItems.optJSONObject(1));
+                        if (items.length() > 1) {
+                            JSONObject item1 = items.optJSONObject(1);
+                            if (item1 != null && item1.has("serviceEndpoint")) {
+                                JSONObject cmd = item1.optJSONObject("serviceEndpoint").optJSONObject("continuationCommand");
+                                if (cmd != null) newestToken = cmd.optString("token", "");
+                            }
                         }
                     }
                 }
             }
 
-            boolean isNewest = "newest".equalsIgnoreCase(sort);
-            String selectedToken = (isNewest && !newestToken.isEmpty()) ? newestToken : topToken;
-
-            if (selectedToken.isEmpty()) {
-                Log.w(TAG, "Could not extract continuation token from comments panel");
-                return null;
+            String chosenToken = "newest".equalsIgnoreCase(sort) ? newestToken : topToken;
+            if (chosenToken == null || chosenToken.isEmpty()) {
+                chosenToken = topToken;
             }
 
-            return new CommentsTokenResult(selectedToken, totalText);
+            return new CommentsTokenResult(chosenToken, totalText);
         } catch (Exception e) {
             Log.e(TAG, "Error in parseCommentsToken: " + e.getMessage(), e);
             return null;
@@ -222,14 +187,36 @@ public class CommentsParser {
      *
      * @param initData JSONObject response from /youtubei/v1/next
      * @return CommentsResult or null on error
+     * Translated directly from parseComments in commentsParser.ts.
      */
     public static CommentsResult parseComments(JSONObject initData) {
         if (initData == null) return null;
-        try {
-            String nextPageToken = "";
-            Map<String, String> cMap = new HashMap<>();
+        String nextPageToken = "";
+        Map<String, String> cMap = new HashMap<>();
 
-            JSONArray continuationItems = findContinuationItems(initData, "reloadContinuationItemsCommand");
+        try {
+            JSONArray continuationItems = null;
+            JSONArray endpoints = initData.optJSONArray("onResponseReceivedEndpoints");
+            if (endpoints != null) {
+                // In TS: initdata.onResponseReceivedEndpoints[1].reloadContinuationItemsCommand.continuationItems
+                if (endpoints.length() > 1 && endpoints.optJSONObject(1) != null
+                        && endpoints.optJSONObject(1).has("reloadContinuationItemsCommand")) {
+                    continuationItems = endpoints.optJSONObject(1)
+                            .optJSONObject("reloadContinuationItemsCommand")
+                            .optJSONArray("continuationItems");
+                }
+                // Fallback scan across all endpoints for reloadContinuationItemsCommand
+                if (continuationItems == null) {
+                    for (int i = 0; i < endpoints.length(); i++) {
+                        JSONObject ep = endpoints.optJSONObject(i);
+                        if (ep != null && ep.has("reloadContinuationItemsCommand")) {
+                            continuationItems = ep.optJSONObject("reloadContinuationItemsCommand")
+                                    .optJSONArray("continuationItems");
+                            break;
+                        }
+                    }
+                }
+            }
 
             if (continuationItems != null) {
                 for (int i = 0; i < continuationItems.length(); i++) {
@@ -237,27 +224,31 @@ public class CommentsParser {
                     if (c == null) continue;
 
                     if (c.has("commentThreadRenderer")) {
-                        JSONObject commentThread = c.optJSONObject("commentThreadRenderer");
-                        if (commentThread == null) continue;
+                        JSONObject thread = c.optJSONObject("commentThreadRenderer");
+                        if (thread == null) continue;
 
-                        String commentId = extractCommentIdFromThread(commentThread);
+                        String id = extractCommentId(thread);
 
-                        JSONObject replies = commentThread.optJSONObject("replies");
-                        if (replies != null) {
-                            JSONObject repliesRenderer = replies.optJSONObject("commentRepliesRenderer");
-                            if (repliesRenderer != null) {
-                                JSONArray subThreads = repliesRenderer.optJSONArray("subThreads");
-                                if (subThreads == null) {
-                                    subThreads = repliesRenderer.optJSONArray("contents");
+                        if (thread.has("replies")) {
+                            JSONObject replies = thread.optJSONObject("replies");
+                            if (replies != null && replies.has("commentRepliesRenderer")) {
+                                JSONObject crr = replies.optJSONObject("commentRepliesRenderer");
+                                JSONArray subThreads = crr != null ? crr.optJSONArray("subThreads") : null;
+                                if (subThreads == null && crr != null) {
+                                    subThreads = crr.optJSONArray("contents");
                                 }
+
                                 if (subThreads != null && subThreads.length() > 0) {
-                                    JSONObject firstSubThread = subThreads.optJSONObject(0);
-                                    if (firstSubThread != null) {
-                                        JSONObject cir = firstSubThread.optJSONObject("continuationItemRenderer");
-                                        if (cir != null) {
-                                            String token = extractContinuationToken(cir);
-                                            if (!commentId.isEmpty() && !token.isEmpty()) {
-                                                cMap.put(commentId, token);
+                                    JSONObject first = subThreads.optJSONObject(0);
+                                    if (first != null && first.has("continuationItemRenderer")) {
+                                        JSONObject cir = first.optJSONObject("continuationItemRenderer");
+                                        if (cir != null && cir.has("continuationEndpoint")) {
+                                            JSONObject cep = cir.optJSONObject("continuationEndpoint");
+                                            if (cep != null && cep.has("continuationCommand")) {
+                                                String token = cep.optJSONObject("continuationCommand").optString("token", "");
+                                                if (!id.isEmpty() && !token.isEmpty()) {
+                                                    cMap.put(id, token);
+                                                }
                                             }
                                         }
                                     }
@@ -266,10 +257,10 @@ public class CommentsParser {
                         }
                     } else if (c.has("continuationItemRenderer")) {
                         JSONObject cir = c.optJSONObject("continuationItemRenderer");
-                        if (cir != null) {
-                            String token = extractContinuationToken(cir);
-                            if (!token.isEmpty()) {
-                                nextPageToken = token;
+                        if (cir != null && cir.has("continuationEndpoint")) {
+                            JSONObject cep = cir.optJSONObject("continuationEndpoint");
+                            if (cep != null && cep.has("continuationCommand")) {
+                                nextPageToken = cep.optJSONObject("continuationCommand").optString("token", "");
                             }
                         }
                     }
@@ -289,14 +280,36 @@ public class CommentsParser {
      *
      * @param initData JSONObject response from /youtubei/v1/next
      * @return CommentsResult or null on error
+     * Translated directly from parseCommentsNext in commentsParser.ts.
      */
     public static CommentsResult parseCommentsNext(JSONObject initData) {
         if (initData == null) return null;
-        try {
-            String nextPageToken = "";
-            Map<String, String> cMap = new HashMap<>();
+        String nextPageToken = "";
+        Map<String, String> cMap = new HashMap<>();
 
-            JSONArray continuationItems = findContinuationItems(initData, "appendContinuationItemsAction");
+        try {
+            JSONArray continuationItems = null;
+            JSONArray endpoints = initData.optJSONArray("onResponseReceivedEndpoints");
+            if (endpoints != null) {
+                // In TS: initdata.onResponseReceivedEndpoints[0].appendContinuationItemsAction.continuationItems
+                if (endpoints.length() > 0 && endpoints.optJSONObject(0) != null
+                        && endpoints.optJSONObject(0).has("appendContinuationItemsAction")) {
+                    continuationItems = endpoints.optJSONObject(0)
+                            .optJSONObject("appendContinuationItemsAction")
+                            .optJSONArray("continuationItems");
+                }
+                // Fallback scan across all endpoints
+                if (continuationItems == null) {
+                    for (int i = 0; i < endpoints.length(); i++) {
+                        JSONObject ep = endpoints.optJSONObject(i);
+                        if (ep != null && ep.has("appendContinuationItemsAction")) {
+                            continuationItems = ep.optJSONObject("appendContinuationItemsAction")
+                                    .optJSONArray("continuationItems");
+                            break;
+                        }
+                    }
+                }
+            }
 
             if (continuationItems != null) {
                 for (int i = 0; i < continuationItems.length(); i++) {
@@ -304,27 +317,31 @@ public class CommentsParser {
                     if (c == null) continue;
 
                     if (c.has("commentThreadRenderer")) {
-                        JSONObject commentThread = c.optJSONObject("commentThreadRenderer");
-                        if (commentThread == null) continue;
+                        JSONObject thread = c.optJSONObject("commentThreadRenderer");
+                        if (thread == null) continue;
 
-                        String commentId = extractCommentIdFromThread(commentThread);
+                        String id = extractCommentId(thread);
 
-                        JSONObject replies = commentThread.optJSONObject("replies");
-                        if (replies != null) {
-                            JSONObject repliesRenderer = replies.optJSONObject("commentRepliesRenderer");
-                            if (repliesRenderer != null) {
-                                JSONArray subThreads = repliesRenderer.optJSONArray("subThreads");
-                                if (subThreads == null) {
-                                    subThreads = repliesRenderer.optJSONArray("contents");
+                        if (thread.has("replies")) {
+                            JSONObject replies = thread.optJSONObject("replies");
+                            if (replies != null && replies.has("commentRepliesRenderer")) {
+                                JSONObject crr = replies.optJSONObject("commentRepliesRenderer");
+                                JSONArray subThreads = crr != null ? crr.optJSONArray("subThreads") : null;
+                                if (subThreads == null && crr != null) {
+                                    subThreads = crr.optJSONArray("contents");
                                 }
+
                                 if (subThreads != null && subThreads.length() > 0) {
-                                    JSONObject firstSubThread = subThreads.optJSONObject(0);
-                                    if (firstSubThread != null) {
-                                        JSONObject cir = firstSubThread.optJSONObject("continuationItemRenderer");
-                                        if (cir != null) {
-                                            String token = extractContinuationToken(cir);
-                                            if (!commentId.isEmpty() && !token.isEmpty()) {
-                                                cMap.put(commentId, token);
+                                    JSONObject first = subThreads.optJSONObject(0);
+                                    if (first != null && first.has("continuationItemRenderer")) {
+                                        JSONObject cir = first.optJSONObject("continuationItemRenderer");
+                                        if (cir != null && cir.has("continuationEndpoint")) {
+                                            JSONObject cep = cir.optJSONObject("continuationEndpoint");
+                                            if (cep != null && cep.has("continuationCommand")) {
+                                                String token = cep.optJSONObject("continuationCommand").optString("token", "");
+                                                if (!id.isEmpty() && !token.isEmpty()) {
+                                                    cMap.put(id, token);
+                                                }
                                             }
                                         }
                                     }
@@ -333,10 +350,10 @@ public class CommentsParser {
                         }
                     } else if (c.has("continuationItemRenderer")) {
                         JSONObject cir = c.optJSONObject("continuationItemRenderer");
-                        if (cir != null) {
-                            String token = extractContinuationToken(cir);
-                            if (!token.isEmpty()) {
-                                nextPageToken = token;
+                        if (cir != null && cir.has("continuationEndpoint")) {
+                            JSONObject cep = cir.optJSONObject("continuationEndpoint");
+                            if (cep != null && cep.has("continuationCommand")) {
+                                nextPageToken = cep.optJSONObject("continuationCommand").optString("token", "");
                             }
                         }
                     }
@@ -356,25 +373,40 @@ public class CommentsParser {
      *
      * @param initData JSONObject response from /youtubei/v1/next
      * @return CommentsResult or null on error
+     * Translated directly from parseSubthreads in commentsParser.ts.
      */
     public static CommentsResult parseSubthreads(JSONObject initData) {
         if (initData == null) return null;
-        try {
-            String nextPageToken = "";
+        String nextPageToken = "";
 
-            JSONArray continuationItems = findContinuationItems(initData, "appendContinuationItemsAction");
+        try {
+            JSONArray continuationItems = null;
+            JSONArray endpoints = initData.optJSONArray("onResponseReceivedEndpoints");
+            if (endpoints != null && endpoints.length() > 0 && endpoints.optJSONObject(0) != null
+                    && endpoints.optJSONObject(0).has("appendContinuationItemsAction")) {
+                continuationItems = endpoints.optJSONObject(0)
+                        .optJSONObject("appendContinuationItemsAction")
+                        .optJSONArray("continuationItems");
+            }
 
             if (continuationItems != null) {
                 for (int i = 0; i < continuationItems.length(); i++) {
                     JSONObject c = continuationItems.optJSONObject(i);
                     if (c == null) continue;
 
+                    // In TS: c.continuationItemRenderer.button.buttonRenderer.command.continuationCommand.token
                     if (c.has("continuationItemRenderer")) {
                         JSONObject cir = c.optJSONObject("continuationItemRenderer");
-                        if (cir != null) {
-                            String token = extractContinuationToken(cir);
-                            if (!token.isEmpty()) {
-                                nextPageToken = token;
+                        if (cir != null && cir.has("button")) {
+                            JSONObject btn = cir.optJSONObject("button");
+                            if (btn != null && btn.has("buttonRenderer")) {
+                                JSONObject br = btn.optJSONObject("buttonRenderer");
+                                if (br != null && br.has("command")) {
+                                    JSONObject cmd = br.optJSONObject("command");
+                                    if (cmd != null && cmd.has("continuationCommand")) {
+                                        nextPageToken = cmd.optJSONObject("continuationCommand").optString("token", "");
+                                    }
+                                }
                             }
                         }
                     }
@@ -391,16 +423,7 @@ public class CommentsParser {
 
     // --- Private Helper Methods ---
 
-    private static String extractSubMenuItemToken(JSONObject item) {
-        if (item == null) return "";
-        JSONObject serviceEndpoint = item.optJSONObject("serviceEndpoint");
-        if (serviceEndpoint == null) return "";
-        JSONObject continuationCommand = serviceEndpoint.optJSONObject("continuationCommand");
-        if (continuationCommand == null) return "";
-        return continuationCommand.optString("token", "");
-    }
-
-    private static String extractCommentIdFromThread(JSONObject commentThread) {
+    private static String extractCommentId(JSONObject commentThread) {
         if (commentThread == null) return "";
         JSONObject cvmWrap = commentThread.optJSONObject("commentViewModel");
         if (cvmWrap != null) {
@@ -415,73 +438,9 @@ public class CommentsParser {
         return "";
     }
 
-    private static String extractContinuationToken(JSONObject continuationItemRenderer) {
-        if (continuationItemRenderer == null) return "";
-
-        // 1. continuationEndpoint.continuationCommand.token
-        JSONObject endpoint = continuationItemRenderer.optJSONObject("continuationEndpoint");
-        if (endpoint != null) {
-            JSONObject cmd = endpoint.optJSONObject("continuationCommand");
-            if (cmd != null && cmd.has("token")) {
-                return cmd.optString("token", "");
-            }
-        }
-
-        // 2. button.buttonRenderer.command.continuationCommand.token
-        JSONObject button = continuationItemRenderer.optJSONObject("button");
-        if (button != null) {
-            JSONObject br = button.optJSONObject("buttonRenderer");
-            if (br != null) {
-                JSONObject cmd = br.optJSONObject("command");
-                if (cmd != null) {
-                    JSONObject cc = cmd.optJSONObject("continuationCommand");
-                    if (cc != null && cc.has("token")) {
-                        return cc.optString("token", "");
-                    }
-                }
-            }
-        }
-        return "";
-    }
-
-    private static JSONArray findContinuationItems(JSONObject initData, String preferredCommand) {
-        if (initData == null) return null;
-        JSONArray endpoints = initData.optJSONArray("onResponseReceivedEndpoints");
-        if (endpoints == null) return null;
-
-        // 1. Check preferred command first across all endpoints
-        if (preferredCommand != null && !preferredCommand.isEmpty()) {
-            for (int i = 0; i < endpoints.length(); i++) {
-                JSONObject ep = endpoints.optJSONObject(i);
-                if (ep != null && ep.has(preferredCommand)) {
-                    JSONObject cmd = ep.optJSONObject(preferredCommand);
-                    if (cmd != null && cmd.has("continuationItems")) {
-                        return cmd.optJSONArray("continuationItems");
-                    }
-                }
-            }
-        }
-
-        // 2. Fallback check reloadContinuationItemsCommand or appendContinuationItemsAction
-        for (int i = 0; i < endpoints.length(); i++) {
-            JSONObject ep = endpoints.optJSONObject(i);
-            if (ep == null) continue;
-            if (ep.has("reloadContinuationItemsCommand")) {
-                JSONObject cmd = ep.optJSONObject("reloadContinuationItemsCommand");
-                if (cmd != null && cmd.has("continuationItems")) {
-                    return cmd.optJSONArray("continuationItems");
-                }
-            }
-            if (ep.has("appendContinuationItemsAction")) {
-                JSONObject cmd = ep.optJSONObject("appendContinuationItemsAction");
-                if (cmd != null && cmd.has("continuationItems")) {
-                    return cmd.optJSONArray("continuationItems");
-                }
-            }
-        }
-        return null;
-    }
-
+    /**
+     * Parses frameworkUpdates.entityBatchUpdate.mutations matching TS mutations.forEach.
+     */
     private static List<CommentItem> parseMutations(JSONObject initData, Map<String, String> cMap, boolean isSubThread) {
         List<CommentItem> commentsList = new ArrayList<>();
         if (initData == null) return commentsList;
@@ -521,14 +480,7 @@ public class CommentsParser {
             String authorName = author != null ? author.optString("displayName", "") : "";
             String avatar = author != null ? author.optString("avatarThumbnailUrl", "") : "";
             String channelId = author != null ? author.optString("channelId", "") : "";
-            String likesCount = "";
-            if (toolbar != null) {
-                if (toolbar.has("likeCountNotliked") && !toolbar.optString("likeCountNotliked", "").isEmpty()) {
-                    likesCount = toolbar.optString("likeCountNotliked", "");
-                } else {
-                    likesCount = toolbar.optString("likeCountLiked", "");
-                }
-            }
+            String likesCount = toolbar != null ? toolbar.optString("likeCountLiked", "") : "";
             String replyCount = toolbar != null ? toolbar.optString("replyCount", isSubThread ? "0" : "") : "";
             String subThreadToken = (!isSubThread && cMap != null && cMap.containsKey(commentId)) ? cMap.get(commentId) : "";
 

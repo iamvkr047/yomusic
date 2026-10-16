@@ -78,18 +78,11 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public void appendComments(List<Comment> nextBatch, boolean hasMore) {
         if (nextBatch != null && !nextBatch.isEmpty()) {
-            int startPos = this.comments.size();
             this.comments.addAll(nextBatch);
-            this.hasMore = hasMore;
-            this.isLoadingMore = false;
-            notifyItemRangeInserted(startPos, nextBatch.size());
-            // notify footer change
-            notifyItemChanged(this.comments.size());
-        } else {
-            this.hasMore = hasMore;
-            this.isLoadingMore = false;
-            notifyItemChanged(this.comments.size());
         }
+        this.hasMore = hasMore;
+        this.isLoadingMore = false;
+        notifyDataSetChanged();
     }
 
     public void setLoadingMore(boolean loading) {
