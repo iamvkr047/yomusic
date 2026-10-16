@@ -79,8 +79,15 @@ public class VideoCommentsHelper {
         commentAdapter.setListener(new CommentAdapter.OnCommentInteractionListener() {
             @Override
             public void onReplyClick(Comment comment) {
-                String replies = comment.getReplyCount();
-                Toast.makeText(activity, "Subthread replies (" + replies + ") will be available in the next phase", Toast.LENGTH_SHORT).show();
+                if (comment == null) return;
+                String token = comment.getSubThreadToken();
+                if (token == null || token.trim().isEmpty()) {
+                    Toast.makeText(activity, "Replies unavailable", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                com.iamvkryt.yomusic.RepliesBottomSheetFragment sheet =
+                        com.iamvkryt.yomusic.RepliesBottomSheetFragment.newInstance(comment, clientContext, apiToken);
+                sheet.show(activity.getSupportFragmentManager(), "RepliesBottomSheet");
             }
 
             @Override
