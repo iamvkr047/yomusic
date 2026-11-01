@@ -1,7 +1,9 @@
-New: Version 2.6
+Version 2.7
 
 Fix:
-- Save radio playlist on Playlist tab
+- Enhanced video player UI and Background Playback.
+- Introducted Comments section.
+- Refactor UI and introduced modularity for maintainablity of codebase.
 
 Feature:
-- Enhanced Recent search UI
+- Implemented new Comments and Replies section.

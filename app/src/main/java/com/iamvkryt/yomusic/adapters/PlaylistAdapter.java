@@ -69,7 +69,7 @@ public class PlaylistAdapter extends RecyclerView.Adapter<PlaylistAdapter.Playli
             title.setText(playlist.getTitle());
             subtitle.setText(playlist.getChannel() != null && !playlist.getChannel().isEmpty() ? playlist.getChannel() : "playlist");
 
-            if (playlist.isCustomPlaylist()) {
+            if (playlist.isCustomPlaylist() || playlist.getThumbnail() == null || playlist.getThumbnail().isEmpty()) {
                 thumbnail.setVisibility(View.GONE);
                 customBg.setVisibility(View.VISIBLE);
                 customIcon.setVisibility(View.VISIBLE);
