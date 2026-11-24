@@ -25,12 +25,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.iamvkryt.yomusic.db.AppDatabase;
-import com.iamvkryt.yomusic.db.entity.HistoryEntity;
+import com.iamvkryt.yomusic.storage.KeepListeningStorage;
 
 public class HomeFragment extends Fragment {
 
     private static MusicDataParser.HomeFeedResult cachedHomeFeedResult = null;
+    private static List<Song> cachedKeepListeningSongs = null;
 
     private View loadingContainer;
     private View errorContainer;
@@ -65,6 +65,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadHomeFeed(boolean forceRefresh) {
+        if (forceRefresh) {
+            cachedKeepListeningSongs = null;
+        }
         if (!forceRefresh && cachedHomeFeedResult != null) {
             displayHomeFeed(cachedHomeFeedResult);
             return;
@@ -147,41 +150,33 @@ public class HomeFragment extends Fragment {
             sectionsContainer.addView(recyclerView);
         }
 
-        // Keep listening section from History
-        AppDatabase db = AppDatabase.getInstance(requireContext());
-        List<HistoryEntity> historyList = db.historyDao().getAllHistory();
-        if (!historyList.isEmpty()) {
-            addSectionHeader("Keep listening");
-            List<HistoryEntity> displayHistory = new ArrayList<>();
-            int size = historyList.size();
-            if (size > 10) {
-                displayHistory.addAll(historyList.subList(size - 5, size));
-                displayHistory.addAll(historyList.subList(0, 5));
-            } else if (size > 1) {
-                int half = size / 2;
-                displayHistory.addAll(historyList.subList(size - half, size));
-                displayHistory.addAll(historyList.subList(0, size - half));
+        // Keep listening section from qualified recommendations (cached per app session)
+        if (cachedKeepListeningSongs == null) {
+            KeepListeningStorage keepListeningStorage = new KeepListeningStorage(requireContext());
+            List<Song> loaded = keepListeningStorage.getTopRecommendations(10);
+            if (!loaded.isEmpty()) {
+                Collections.shuffle(loaded);
+                cachedKeepListeningSongs = loaded;
             } else {
-                displayHistory.addAll(historyList);
+                cachedKeepListeningSongs = new ArrayList<>();
             }
+        }
 
-            List<Song> historySongs = new ArrayList<>();
-            for (HistoryEntity item : displayHistory) {
-                String thumbnailUrl = "https://img.youtube.com/vi/" + item.getVideoId() + "/hqdefault.jpg";
-                historySongs.add(new Song(item.getVideoId(), item.getTitle(), item.getChannel(), thumbnailUrl));
-            }
+        if (cachedKeepListeningSongs != null && !cachedKeepListeningSongs.isEmpty()) {
+            addSectionHeader("Keep listening");
+            List<Song> keepListeningSongs = cachedKeepListeningSongs;
 
             RecyclerView historyRecycler = new RecyclerView(requireContext());
             historyRecycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
             historyRecycler.setClipToPadding(false);
 
-            SongAdapter historyAdapter = new SongAdapter(historySongs, song -> {
+            SongAdapter historyAdapter = new SongAdapter(keepListeningSongs, song -> {
                 if (getActivity() instanceof MainActivity) {
                     List<com.iamvkryt.yomusic.models.VideoItem> videoQueue = new ArrayList<>();
-                    for (Song s : historySongs) {
+                    for (Song s : keepListeningSongs) {
                         videoQueue.add(new com.iamvkryt.yomusic.models.VideoItem(s.getVideoId(), s.getTitle(), s.getArtist(), 0));
                     }
-                    int clickIndex = historySongs.indexOf(song);
+                    int clickIndex = keepListeningSongs.indexOf(song);
                     if (clickIndex == -1) clickIndex = 0;
                     ((MainActivity) getActivity()).playPlaylistQueue(videoQueue, clickIndex);
                 }

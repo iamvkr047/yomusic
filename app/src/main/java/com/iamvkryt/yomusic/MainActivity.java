@@ -17,8 +17,10 @@ import com.iamvkryt.yomusic.helpers.MiniPlayerController;
 import com.iamvkryt.yomusic.helpers.AppNavigator;
 import com.iamvkryt.yomusic.helpers.IntentHandler;
 import com.iamvkryt.yomusic.helpers.PlaybackServiceBridge;
+import com.iamvkryt.yomusic.helpers.PlaybackTracker;
 import com.iamvkryt.yomusic.helpers.QueueManager;
 import com.iamvkryt.yomusic.helpers.YouTubePlayerEngine;
+import com.iamvkryt.yomusic.storage.KeepListeningStorage;
 
 import java.util.List;
 
@@ -37,12 +39,16 @@ public class MainActivity extends AppCompatActivity {
     private IntentHandler intentHandler;
     private MiniPlayerController miniPlayerController;
     private QueueManager queueManager;
+    private KeepListeningStorage keepListeningStorage;
+    private PlaybackTracker playbackTracker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         instance = this;
         queueManager = new QueueManager(this);
+        keepListeningStorage = new KeepListeningStorage(this);
+        playbackTracker = new PlaybackTracker(keepListeningStorage);
         
 
         EdgeToEdge.enable(this);
@@ -190,6 +196,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPlaybackStateChanged(boolean isPlaying) {
+                if (playbackTracker != null) {
+                    playbackTracker.onPlaybackStateChanged(isPlaying);
+                }
                 if (miniPlayerController != null) {
                     miniPlayerController.updatePlayState(isPlaying);
                 }
@@ -206,6 +215,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onProgressUpdated(int currentPosition, int duration) {
+                if (playbackTracker != null) {
+                    playbackTracker.onProgressTick(duration);
+                }
                 if (miniPlayerController != null) {
                     miniPlayerController.updateProgress(currentPosition, duration);
                 }
@@ -216,6 +228,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onVideoMetadataLoaded(String title, String author, String videoId) {
+                if (playbackTracker != null) {
+                    playbackTracker.onMetadataUpdated(title, author, videoId);
+                }
                 if (miniPlayerController != null) {
                     miniPlayerController.updateTrackInfo(title, author, getCurrentThumbnailUrl());
                 }
@@ -299,6 +314,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void playSong(Song song) {
         if (song == null) return;
+
+        if (playbackTracker != null) {
+            playbackTracker.onSongChanged(song);
+        }
 
         if (queueManager != null) {
             queueManager.enqueueSong(song);
