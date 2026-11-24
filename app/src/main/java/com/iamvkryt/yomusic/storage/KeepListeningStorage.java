@@ -7,6 +7,7 @@ import com.iamvkryt.yomusic.Song;
 import com.iamvkryt.yomusic.db.AppDatabase;
 import com.iamvkryt.yomusic.db.dao.KeepListeningDao;
 import com.iamvkryt.yomusic.db.entity.KeepListeningEntity;
+import com.iamvkryt.yomusic.models.VideoItem;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -138,6 +139,33 @@ public class KeepListeningStorage {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error loading top recommendations: " + e.getMessage(), e);
+        }
+        return result;
+    }
+
+    /**
+     * Loads all qualified Keep Listening songs ordered by decay score descending,
+     * mapped to VideoItem for list display and playback queueing.
+     */
+    public synchronized List<VideoItem> loadAllKeepListening() {
+        List<VideoItem> result = new ArrayList<>();
+        try {
+            List<KeepListeningEntity> all = keepListeningDao.getAll();
+            if (all == null || all.isEmpty()) return result;
+
+            long now = System.currentTimeMillis();
+            all.sort((a, b) -> Double.compare(calculateScore(b, now), calculateScore(a, now)));
+
+            for (KeepListeningEntity entity : all) {
+                result.add(new VideoItem(
+                        entity.getVideoId(),
+                        entity.getTitle(),
+                        entity.getChannel(),
+                        entity.getDuration()
+                ));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading keep listening songs: " + e.getMessage(), e);
         }
         return result;
     }

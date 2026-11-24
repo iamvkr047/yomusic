@@ -32,6 +32,10 @@ public class HomeFragment extends Fragment {
     private static MusicDataParser.HomeFeedResult cachedHomeFeedResult = null;
     private static List<Song> cachedKeepListeningSongs = null;
 
+    public static void invalidateKeepListeningCache() {
+        cachedKeepListeningSongs = null;
+    }
+
     private View loadingContainer;
     private View errorContainer;
     private View contentScroll;

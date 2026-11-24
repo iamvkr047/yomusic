@@ -129,6 +129,11 @@ public class MoreFragment extends Fragment {
                 ((MainActivity) getActivity()).openHistoryPage();
             }
         });
+        view.findViewById(R.id.btn_manage_suggestions).setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openManageSuggestionsPage();
+            }
+        });
         view.findViewById(R.id.btn_update).setOnClickListener(v -> checkUpdates(true));
         view.findViewById(R.id.btn_privacy_policy).setOnClickListener(v -> showPrivacyPolicyDialog());
         view.findViewById(R.id.btn_share_app).setOnClickListener(v -> shareApp());

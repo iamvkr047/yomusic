@@ -18,6 +18,7 @@ import com.iamvkryt.yomusic.SearchResultsFragment;
 import com.iamvkryt.yomusic.tabs.FavoriteFragment;
 import com.iamvkryt.yomusic.tabs.HistoryFragment;
 import com.iamvkryt.yomusic.tabs.HomeFragment;
+import com.iamvkryt.yomusic.tabs.ManageSuggestionsFragment;
 import com.iamvkryt.yomusic.tabs.MoreFragment;
 import com.iamvkryt.yomusic.tabs.PlaylistFragment;
 
@@ -171,6 +172,13 @@ public class AppNavigator {
     public void openHistoryPage() {
         fragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, new HistoryFragment())
+                .addToBackStack(null)
+                .commit();
+    }
+
+    public void openManageSuggestionsPage() {
+        fragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, new ManageSuggestionsFragment())
                 .addToBackStack(null)
                 .commit();
     }

@@ -297,6 +297,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void openManageSuggestionsPage() {
+        if (appNavigator != null) {
+            appNavigator.openManageSuggestionsPage();
+        }
+    }
+
     public void notifyFavoriteChanged() {
         if (appNavigator != null) {
             appNavigator.notifyFavoriteChanged();
