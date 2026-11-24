@@ -1,6 +1,7 @@
 package com.iamvkryt.yomusic;
 
 import android.app.Dialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,16 +11,20 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.slider.Slider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.iamvkryt.yomusic.adapters.QueueAdapter;
 import com.iamvkryt.yomusic.models.Playlist;
 import com.iamvkryt.yomusic.models.VideoItem;
 import com.iamvkryt.yomusic.storage.FavoriteStorage;
@@ -40,7 +45,13 @@ public class PlayerBottomSheetFragment extends BottomSheetDialogFragment {
     private FloatingActionButton btnPlayPause;
     private ImageButton btnPrevious;
     private ImageButton btnNext;
-    private ImageButton btnCollapse;
+    private ImageButton btnQueue;
+    private View queueContainer;
+    private RecyclerView rvQueue;
+    private TextView tvEmptyQueue;
+    private TextView tvQueueTitle;
+    private QueueAdapter queueAdapter;
+    private boolean isQueueVisible = false;
     private ImageButton btnPlayerFavorite;
     private ImageButton btnAddToPlaylist;
     private ImageButton btnVideoToggle;
@@ -74,8 +85,21 @@ public class PlayerBottomSheetFragment extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        btnCollapse = view.findViewById(R.id.btn_collapse);
+        btnQueue = view.findViewById(R.id.btn_queue);
         playerArtwork = view.findViewById(R.id.player_artwork);
+        queueContainer = view.findViewById(R.id.queue_container);
+        rvQueue = view.findViewById(R.id.rv_queue);
+        tvEmptyQueue = view.findViewById(R.id.tv_empty_queue);
+        tvQueueTitle = view.findViewById(R.id.tv_queue_title);
+
+        if (rvQueue != null) {
+            rvQueue.setLayoutManager(new LinearLayoutManager(getContext()));
+        }
+
+        if (btnQueue != null) {
+            btnQueue.setOnClickListener(v -> toggleQueueView());
+        }
+
         playerTitle = view.findViewById(R.id.player_title);
         playerArtist = view.findViewById(R.id.player_artist);
         playerSlider = view.findViewById(R.id.player_slider);
@@ -90,8 +114,6 @@ public class PlayerBottomSheetFragment extends BottomSheetDialogFragment {
 
         favoriteStorage = new FavoriteStorage(requireContext());
         playlistStorage = new PlaylistStorage(requireContext());
-
-        btnCollapse.setOnClickListener(v -> dismiss());
 
         MainActivity activity = (MainActivity) getActivity();
 
@@ -185,6 +207,68 @@ public class PlayerBottomSheetFragment extends BottomSheetDialogFragment {
             if (btnPlayerFavorite != null) {
                 btnPlayerFavorite.setImageResource(isFav ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
             }
+        }
+
+        if (isQueueVisible && queueAdapter != null && activity != null && activity.getQueueManager() != null) {
+            int curIdx = activity.getQueueManager().getCurrentIndex();
+            queueAdapter.updateCurrentIndex(curIdx);
+            if (curIdx >= 0 && rvQueue != null) {
+                rvQueue.scrollToPosition(curIdx);
+            }
+        }
+    }
+
+    private void toggleQueueView() {
+        isQueueVisible = !isQueueVisible;
+
+        if (playerArtwork != null) {
+            playerArtwork.setVisibility(isQueueVisible ? View.GONE : View.VISIBLE);
+        }
+        if (queueContainer != null) {
+            queueContainer.setVisibility(isQueueVisible ? View.VISIBLE : View.GONE);
+        }
+
+        if (btnQueue != null) {
+            int activeColor = MaterialColors.getColor(btnQueue, androidx.appcompat.R.attr.colorPrimary);
+            int inactiveColor = MaterialColors.getColor(btnQueue, com.google.android.material.R.attr.colorOnSurface);
+            btnQueue.setImageTintList(ColorStateList.valueOf(isQueueVisible ? activeColor : inactiveColor));
+        }
+
+        if (isQueueVisible) {
+            refreshQueueList();
+        }
+    }
+
+    private void refreshQueueList() {
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity == null || activity.getQueueManager() == null) return;
+
+        List<Song> queue = activity.getQueueManager().getPlaylist();
+        int currentIndex = activity.getQueueManager().getCurrentIndex();
+
+        int count = (queue != null) ? queue.size() : 0;
+        if (tvQueueTitle != null) {
+            tvQueueTitle.setText("Queue (" + count + ")");
+        }
+
+        if (queue == null || queue.isEmpty()) {
+            if (tvEmptyQueue != null) tvEmptyQueue.setVisibility(View.VISIBLE);
+            if (rvQueue != null) rvQueue.setVisibility(View.GONE);
+            return;
+        }
+
+        if (tvEmptyQueue != null) tvEmptyQueue.setVisibility(View.GONE);
+        if (rvQueue != null) rvQueue.setVisibility(View.VISIBLE);
+
+        queueAdapter = new QueueAdapter(queue, currentIndex, (song, position) -> {
+            activity.playQueueSongAt(position);
+            if (queueAdapter != null) {
+                queueAdapter.updateCurrentIndex(position);
+            }
+        });
+        rvQueue.setAdapter(queueAdapter);
+        if (currentIndex >= 0 && currentIndex < queue.size()) {
+            rvQueue.scrollToPosition(currentIndex);
         }
     }
 

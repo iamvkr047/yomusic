@@ -366,6 +366,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void playQueueSongAt(int index) {
+        if (queueManager != null) {
+            List<Song> playlist = queueManager.getPlaylist();
+            if (index >= 0 && index < playlist.size()) {
+                queueManager.setCurrentIndex(index);
+                playSong(playlist.get(index));
+            }
+        }
+    }
+
+    public QueueManager getQueueManager() {
+        return queueManager;
+    }
+
     private void showFullPlayerSheet() {
         if (appNavigator != null) {
             appNavigator.showFullPlayerSheet();

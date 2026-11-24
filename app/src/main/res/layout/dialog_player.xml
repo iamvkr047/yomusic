@@ -7,14 +7,14 @@
     android:background="?attr/colorSurface"
     android:padding="24dp">
 
-    <!-- Collapse Chevron Button -->
+    <!-- Queue Toggle Button -->
     <ImageButton
-        android:id="@+id/btn_collapse"
+        android:id="@+id/btn_queue"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Collapse Player"
-        android:src="@drawable/ic_chevron_down"
+        android:contentDescription="Toggle Queue"
+        android:src="@drawable/ic_queue_music"
         app:tint="?attr/colorOnSurface"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -27,8 +27,8 @@
         android:text="Playing from YouTube"
         android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
         android:textColor="?attr/colorOnSurfaceVariant"
-        app:layout_constraintTop_toTopOf="@id/btn_collapse"
-        app:layout_constraintBottom_toBottomOf="@id/btn_collapse"
+        app:layout_constraintTop_toTopOf="@id/btn_queue"
+        app:layout_constraintBottom_toBottomOf="@id/btn_queue"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -44,22 +44,78 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Full Artwork Card -->
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/player_artwork"
+    <!-- Center Container: Holds Album Art OR Queue with 1:1 Aspect Ratio (Prevents Dialog Shrinking) -->
+    <FrameLayout
+        android:id="@+id/player_center_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="24dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_music_note"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large"
         app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintTop_toBottomOf="@id/btn_collapse"
+        app:layout_constraintTop_toBottomOf="@id/btn_queue"
         app:layout_constraintBottom_toTopOf="@id/player_title"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintWidth_max="320dp" />
+        app:layout_constraintWidth_max="320dp">
+
+        <!-- Full Artwork Card -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/player_artwork"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_music_note"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large" />
+
+        <!-- Queue Card (Toggled via Queue Button) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/queue_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/tv_queue_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Queue"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="6dp" />
+
+                <TextView
+                    android:id="@+id/tv_empty_queue"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="No songs in queue"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_queue"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
 
     <!-- Track Title -->
     <TextView

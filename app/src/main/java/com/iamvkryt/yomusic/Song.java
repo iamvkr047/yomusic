@@ -28,4 +28,17 @@ public class Song {
     public String getThumbnailUrl() {
         return thumbnailUrl;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Song song = (Song) o;
+        return videoId != null ? videoId.equals(song.videoId) : song.videoId == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return videoId != null ? videoId.hashCode() : 0;
+    }
 }

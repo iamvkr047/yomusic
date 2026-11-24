@@ -73,4 +73,10 @@ public class QueueManager {
     public int getCurrentIndex() {
         return currentIndex;
     }
+
+    public void setCurrentIndex(int index) {
+        if (index >= 0 && index < playlist.size()) {
+            this.currentIndex = index;
+        }
+    }
 }
