@@ -1,9 +1,6 @@
-Version 2.7
+Version 2.8
 
-Fix:
-- Enhanced video player UI and Background Playback.
-- Introducted Comments section.
-- Refactor UI and introduced modularity for maintainablity of codebase.
-
-Feature:
-- Implemented new Comments and Replies section.
+- Natural recommendations in Keep Listening based on song playback.
+- Added dedicated Manage Suggestions page to view and remove suggestions.
+- Introduced visible queue list in player dialog.
+- Search now automatically queues upcoming radio recommendations.
