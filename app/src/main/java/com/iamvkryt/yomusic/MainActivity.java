@@ -21,6 +21,10 @@ import com.iamvkryt.yomusic.helpers.PlaybackTracker;
 import com.iamvkryt.yomusic.helpers.QueueManager;
 import com.iamvkryt.yomusic.helpers.YouTubePlayerEngine;
 import com.iamvkryt.yomusic.storage.KeepListeningStorage;
+import com.iamvkryt.yomusic.api.YtRepository;
+import com.iamvkryt.yomusic.models.Playlist;
+import org.json.JSONObject;
+import android.util.Log;
 
 import java.util.List;
 
@@ -315,6 +319,37 @@ public class MainActivity extends AppCompatActivity {
             if (targetSong != null) {
                 playSong(targetSong);
             }
+        }
+    }
+
+    public void playSearchVideoWithRadio(VideoItem video) {
+        if (video == null) return;
+
+        List<VideoItem> initialQueue = new java.util.ArrayList<>();
+        initialQueue.add(video);
+        playPlaylistQueue(initialQueue, 0);
+
+        String videoId = video.getVideoId();
+        if (videoId != null && !videoId.isEmpty()) {
+            YtRepository repository = new YtRepository(this);
+            repository.getPlaylistVideos("RD" + videoId, new YtRepository.OnPlaylistCallback() {
+                @Override
+                public void onSuccess(Playlist playlist, JSONObject context, String apiToken) {
+                    if (playlist != null && playlist.getVideoItems() != null && !playlist.getVideoItems().isEmpty()) {
+                        if (queueManager != null && videoId.equals(getCurrentVideoId())) {
+                            queueManager.appendQueue(playlist.getVideoItems());
+                            if (appNavigator != null) {
+                                appNavigator.updatePlayerSheetQueue();
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.w("MainActivity", "Failed to load radio queue for video " + videoId + ": " + errorMessage);
+                }
+            });
         }
     }
 

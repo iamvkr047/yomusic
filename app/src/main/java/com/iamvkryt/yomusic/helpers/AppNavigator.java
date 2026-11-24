@@ -211,4 +211,10 @@ public class AppNavigator {
             activePlayerBottomSheet.updateProgress(currentTime, duration);
         }
     }
+
+    public void updatePlayerSheetQueue() {
+        if (activePlayerBottomSheet != null && activePlayerBottomSheet.isAdded()) {
+            activePlayerBottomSheet.updateQueueList();
+        }
+    }
 }

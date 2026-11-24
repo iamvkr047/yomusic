@@ -79,4 +79,16 @@ public class QueueManager {
             this.currentIndex = index;
         }
     }
+
+    public void appendQueue(List<VideoItem> items) {
+        if (items == null || items.isEmpty()) return;
+        for (VideoItem item : items) {
+            if (item == null || item.getVideoId() == null || item.getVideoId().isEmpty()) continue;
+            String thumb = "https://i.ytimg.com/vi/" + item.getVideoId() + "/hqdefault.jpg";
+            Song song = new Song(item.getVideoId(), item.getTitle(), item.getChannel(), thumb);
+            if (!playlist.contains(song)) {
+                playlist.add(song);
+            }
+        }
+    }
 }

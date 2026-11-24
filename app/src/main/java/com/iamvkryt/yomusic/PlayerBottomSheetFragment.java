@@ -239,6 +239,12 @@ public class PlayerBottomSheetFragment extends BottomSheetDialogFragment {
         }
     }
 
+    public void updateQueueList() {
+        if (isQueueVisible) {
+            refreshQueueList();
+        }
+    }
+
     private void refreshQueueList() {
         MainActivity activity = (MainActivity) getActivity();
         if (activity == null || activity.getQueueManager() == null) return;

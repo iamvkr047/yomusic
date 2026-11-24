@@ -89,10 +89,7 @@ public class SearchResultsFragment extends Fragment {
             @Override
             public void onVideoClick(VideoItem video) {
                 if (getActivity() instanceof MainActivity) {
-                    // Build a single-song queue and play
-                    List<VideoItem> queue = new ArrayList<>();
-                    queue.add(video);
-                    ((MainActivity) getActivity()).playPlaylistQueue(queue, 0);
+                    ((MainActivity) getActivity()).playSearchVideoWithRadio(video);
                 }
             }
 
